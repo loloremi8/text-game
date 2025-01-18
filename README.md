@@ -41,5 +41,5 @@ text-game
 - Ensure your code adheres to the project's coding standards.
 - Submit a pull request with a clear description of your changes.
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+[comment]: <> (## License)
+[comment]: <> (This project is licensed under the MIT License. See the LICENSE file for details.)
