@@ -1,18 +1,22 @@
 class Character:
-    def __init__(self, name, class_type):
+    def __init__(self, name="", player_class="", health=100, attack=10):
         self.name = name
-        self.class_type = class_type
+        self.player_class = player_class
+        self.health = health
+        self.attack = attack
         self.inventory = []
 
-    def add_to_inventory(self, item):
-        self.inventory.append(item)
+    def display_status(self):
+        # Displays the player's status and inventory on the right side
+        stats = f"""
+        Player Stats:
+        -------------
+        Name: {self.name}
+        Class: {self.player_class}
+        Health: {self.health}
+        Attack: {self.attack}
 
-    def remove_from_inventory(self, item):
-        if item in self.inventory:
-            self.inventory.remove(item)
-
-    def show_inventory(self):
-        return self.inventory
-
-    def __str__(self):
-        return f"{self.name} the {self.class_type}"
+        Inventory:
+        {', '.join(self.inventory) if self.inventory else 'Empty'}
+        """
+        return stats
