@@ -38,7 +38,6 @@ text-game
 
 ## Contribution Guidelines
 - Fork the repository and create a new branch for your feature or bug fix.
-- Ensure your code adheres to the project's coding standards.
 - Submit a pull request with a clear description of your changes.
 
 [comment]: <> (## License)
