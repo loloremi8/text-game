@@ -32,9 +32,12 @@ class Game:
         os.system("cls" if os.name == "nt" else "clear")
 
     def render_screen(self):
-        # Renders the screen with old and new messages and status.
-        wrapped_text = "\n".join(self.game_text)
-        wrapped_text = textwrap.fill("\n".join(self.game_text), width=70)
+        # Renders the screen with the latest messages and status.
+        self.clear_screen()
+
+        # Display the latest message
+        latest_message = self.game_text[-1] if self.game_text else ""
+        wrapped_text = textwrap.fill(latest_message, width=70)
 
         # Display the wrapped text and status panel
         stats = self.player.display_status()
@@ -51,6 +54,9 @@ class Game:
         # Print the split screen with old message first and then new
         for left, right in zip(wrapped_text_lines, stats_lines):
             print(f"{left:<75} | {right}")
+
+        # Add the separator line
+        print("-" * 100)
 
     def show_actions(self, room):
         # Show available actions for the current room
@@ -112,15 +118,12 @@ class Game:
             room = self.rooms[self.current_room]
             self.game_text.append(room.describe())  # Append room description to game text
             self.render_screen()
-
-            # Add the separator line between old and new messages
-            print("-" * 100)  # Underline separator
-
+        
             if not room.actions:
-                self.game_text.append("Game Over!")
+                self.game_text.append("Game over!")
                 self.render_screen()
                 break
-            
+
             action = self.get_action(room)
             if action is None:  # Player chose to quit
                 break
@@ -130,5 +133,5 @@ class Game:
                 self.game_text.append(f"You move to the {self.current_room} room.")
             else:
                 self.game_text.append("You can't do that.")
-
+        
             self.render_screen()
