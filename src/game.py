@@ -1,124 +1,83 @@
 import os
 import textwrap
 from character import Character
-from room import Room
+from room import Room, rooms
 
 class Game:
     def __init__(self):
         self.player = Character()
-        self.rooms = {
-            "start": Room(
-                "You find yourself in a dimly lit cave. A path leads forward.",
-                {"Go forward": "hallway"}
-            ),
-            "hallway": Room(
-                "You enter a long hallway with doors on either side.",
-                {"Open left door": "treasure_room", "Open right door": "monster_room"}
-            ),
-            "treasure_room": Room(
-                "You find a chest filled with gold. Congratulations, you win!",
-                {}
-            ),
-            "monster_room": Room(
-                "A fearsome monster appears!",
-                {}
-            )
-        }
-        self.current_room = "start" # Set initial room
-        self.game_text = [] # To store game text
+        self.rooms = rooms
+        self.current_room = "start"
+        self.game_text = []  # To store the history of game events
 
     def clear_screen(self):
-        # Clears the terminal screen.
+        """Clears the terminal screen."""
         os.system("cls" if os.name == "nt" else "clear")
 
     def render_screen(self):
-        # Renders the screen with the latest messages and status.
+        """Renders the screen with the latest message and status."""
         self.clear_screen()
-
+        
         # Display the latest message
         latest_message = self.game_text[-1] if self.game_text else ""
         wrapped_text = textwrap.fill(latest_message, width=70)
-
+        
         # Display the wrapped text and status panel
         stats = self.player.display_status()
         stats_lines = stats.split("\n")
 
         # Calculate the maximum number of lines for wrapping
         max_lines = max(len(wrapped_text.split("\n")), len(stats_lines))
-
+        
         # Padding lines if the text or stats are shorter
         wrapped_text_lines = wrapped_text.split("\n")
         wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
         stats_lines += [""] * (max_lines - len(stats_lines))
 
-        # Print the split screen with old message first and then new
+        # Print the split screen with the latest message and status
         for left, right in zip(wrapped_text_lines, stats_lines):
             print(f"{left:<75} | {right}")
-
+        
         # Add the separator line
         print("-" * 100)
 
     def show_actions(self, room):
-        # Show available actions for the current room
-        for i, action in enumerate(room.actions.keys()):
-            print(f" [{i+1}] {action}")
+        """Show available actions for the current room."""
+        print("\nAvailable Actions:")
+        for i, action in enumerate(room.actions.keys(), 1):
+            print(f" [{i}] {action}")
         print(" [0] Quit")
 
     def get_action(self, room):
-        # Prompts the player to choose an action
+        """Prompts the player to choose an action."""
         self.show_actions(room)
         while True:
             try:
-                choice = input(f"\nWhat do you do? > ").strip().lower()
+                choice = input(f"\nWhat do you do? > ").strip().lower() 
                 if choice == "0":
                     print("You chose to quit the game.")
-                    return None # Exiting game
+                    return None  # Exiting game
                 action = list(room.actions.keys())[int(choice) - 1]
                 return action
-            except (IndexError, ValueError):
-                print("Invalid choice. Please try again.")
-
-    def choose_class(self):
-        # Allows the player to choose a class
-        while True:
-            self.clear_screen()
-            print("Choose your class:")
-            print(" [1] Warrior - Strong and durable.")
-            print(" [2] Mage - Master of spells.")
-            print(" [3] Rogue - Quick and stealthy.")
-            choice = input("> ").strip()
-            if choice == "1":
-                self.player.player_class = "Warrior"
-                self.player.health += 50
-                self.player.attack += 5
-                break
-            elif choice == "2":
-                self.player.player_class = "Mage"
-                self.player.inventory.append("Magic Wand")
-                break
-            elif choice == "3":
-                self.player.player_class = "Rogue"
-                self.player.attack += 10
-                break
-            else:
-                print("Invalid choice, please select 1, 2, or 3.")
+            except (ValueError, IndexError):
+                print("Invalid choice, please try again.")
 
     def start_game(self):
-        # Starts the game
+        """Starts the game."""
         self.clear_screen()
         print("Welcome to the Fantasy Adventure Game!")
         self.player.name = input("What is your name adventurer? ").strip()
-        self.choose_class()
-        self.game_text.append(f"Good luck oon your journey, {self.player.name} the {self.player.player_class}!")
+        self.player.choose_class()
+        self.game_text.append(f"Good luck on your journey, {self.player.name} the {self.player.p_class}!")
         self.game_loop()
 
     def game_loop(self):
-        # Main game loop
+        """Main game loop."""
         while True:
             room = self.rooms[self.current_room]
             self.game_text.append(room.describe())  # Append room description to game text
             self.render_screen()
-        
+            
             if not room.actions:
                 self.game_text.append("Game over!")
                 self.render_screen()
@@ -133,5 +92,5 @@ class Game:
                 self.game_text.append(f"You move to the {self.current_room} room.")
             else:
                 self.game_text.append("You can't do that.")
-        
+            
             self.render_screen()

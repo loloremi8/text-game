@@ -14,3 +14,22 @@ class Room:
 
     def get_exits(self):
         return list(self.actions.keys())
+
+rooms = {
+    "start": Room(
+        "You find yourself in a dimly lit cave. A path leads forward.",
+        {"Go forward": "hallway"}
+    ),
+    "hallway": Room(
+        "You enter a long hallway with doors on either side.",
+        {"Open left door": "treasure_room", "Open right door": "monster_room"}
+    ),
+    "treasure_room": Room(
+        "You find a chest filled with gold. Congratulations, you win!",
+        {}
+    ),
+    "monster_room": Room(
+        "A fearsome monster appears!",
+        {}
+    )
+}
