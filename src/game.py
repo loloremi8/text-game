@@ -2,6 +2,8 @@ import time
 import textwrap
 from character import Character
 from room import Room, rooms
+from monsters import Monster, normal_monsters, special_monsters
+from combat import combat
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
 
 class Game:
@@ -89,9 +91,18 @@ class Game:
             if action is None:  # Player chose to quit
                 break
 
+            # Combat mechanic loop
             if action in room.actions:
-                self.current_room = room.actions[action]
-                self.game_text.append(format_output(f"You move to the {self.current_room} room."))
+                if isinstance(room.actions[action], Monster):
+                    monster = room.actions[action]
+                    combat(self.player, monster)
+                    if self.player.health <= 0:
+                        self.game_text.append(format_output("You have been defeated! Game over!"))
+                        self.render_screen()
+                        break
+                else:
+                    self.current_room = room.actions[action]
+                    self.game_text.append(format_output(f"You move to the {self.current_room} room."))
             else:
                 self.game_text.append(format_output("You can't do that."))
             

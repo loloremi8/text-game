@@ -1,3 +1,5 @@
+from monsters import normal_monsters, special_monsters
+
 class Room:
     def __init__(self, description, actions):
         self.description = description
@@ -30,6 +32,6 @@ rooms = {
     ),
     "monster_room": Room(
         "A fearsome monster appears!",
-        {}
+        {"fight": normal_monsters[0]}  # Assign Goblin to monster_room
     )
 }
