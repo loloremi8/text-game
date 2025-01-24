@@ -11,6 +11,8 @@ text-game
 │   ├── character.py     # Defines the Character class
 │   ├── room.py          # Contains the Room class
 │   ├── game.py          # Manages overall game logic
+|   ├── monsters.py      # Defines monsters and their stats
+|   ├── combat.py        # Defines combat mechanics
 │   └── utils
 │       └── helpers.py   # Utility functions
 ├── requirements.txt     # Project dependencies
