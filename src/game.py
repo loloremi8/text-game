@@ -13,32 +13,60 @@ class Game:
         self.current_room = "start"
         self.game_text = []  # To store the history of game events
 
-    def render_screen(self):
+    def render_screen(self, monster=None):
         """Renders the screen with the latest message and status."""
         clear_screen()
         
-        # Display the latest message
-        latest_message = self.game_text[-1] if self.game_text else ""
-        wrapped_text = textwrap.fill(latest_message, width=70)
+        if monster: # Display monster stats if there is a monster
+            # Display the latest message
+            latest_message = self.game_text[-1] if self.game_text else ""
+            wrapped_text = textwrap.fill(latest_message, width=50)
         
-        # Display the wrapped text and status panel
-        stats = self.player.display_status()
-        stats_lines = stats.split("\n")
+            # Display the wrapped text, monster stats, and player stats        
+            stats = self.player.display_status()
+            stats_lines = stats.split("\n")
 
-        # Calculate the maximum number of lines for wrapping
-        max_lines = max(len(wrapped_text.split("\n")), len(stats_lines))
-        
-        # Padding lines if the text or stats are shorter
-        wrapped_text_lines = wrapped_text.split("\n")
-        wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
-        stats_lines += [""] * (max_lines - len(stats_lines))
+            monster_stats = monster.display_status()
+            monster_stats_lines = monster_stats.split("\n")
 
-        # Print the split screen with the latest message and status
-        for left, right in zip(wrapped_text_lines, stats_lines):
-            print(f"{left:<75} | {right}")
+            # Calculate the maximum number of lines for wrapping
+            max_lines = max(len(wrapped_text.split("\n")), len(stats_lines), len(monster_stats_lines))
+
+            # Padding lines if the text, monster stats, or player stats are shorter
+            wrapped_text_lines = wrapped_text.split("\n")
+            wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
+            stats_lines += [""] * (max_lines - len(stats_lines))
+            monster_stats_lines += [""] * (max_lines - len(monster_stats_lines))
+
+            # Print the split screen with the latest message, monster stats, and player stats
+            for left, middle, right in zip(wrapped_text_lines, monster_stats_lines, stats_lines):
+                print(f"{left:<50} | {middle:<25} | {right:<25}")
+
+        else:   # Display only player stats if there is no monster
+            # Display the latest message
+            latest_message = self.game_text[-1] if self.game_text else ""
+            wrapped_text = textwrap.fill(latest_message, width=70)
         
+            # Display the wrapped text, monster stats, and player stats        
+            stats = self.player.display_status()
+            stats_lines = stats.split("\n")
+
+            monster_stats_lines = [""] * len(stats_lines)
+
+            # Calculate the maximum number of lines for wrapping
+            max_lines = max(len(wrapped_text.split("\n")), len(stats_lines))
+
+            # Padding lines if the text or stats are shorter
+            wrapped_text_lines = wrapped_text.split("\n")
+            wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
+            stats_lines += [""] * (max_lines - len(stats_lines))
+
+            # Print the split screen with the latest message and status
+            for left, right in zip(wrapped_text_lines, stats_lines):
+                print(f"{left:<75} | {right}")
+
         # Add the separator line
-        print("-" * 100)
+        print("-" * 120)
 
     def show_actions(self, room):
         """Show available actions for the current room."""
@@ -95,7 +123,7 @@ class Game:
             if action in room.actions:
                 if isinstance(room.actions[action], Monster):
                     monster = room.actions[action]
-                    combat(self.player, monster)
+                    combat(self, self.player, monster)
                     if self.player.health <= 0:
                         self.game_text.append(format_output("You have been defeated! Game over!"))
                         self.render_screen()
