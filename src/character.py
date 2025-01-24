@@ -21,6 +21,10 @@ class Character:
         """
         return stats
 
+    def choose_name(self):
+        """Allows the player to choose a name"""
+        self.name = input("What is your name adventurer? ").strip()
+
     def choose_class(self):
         """Allows the player to choose a class."""
         while True:

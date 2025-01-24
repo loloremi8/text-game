@@ -14,3 +14,7 @@ def validate_input(prompt, valid_options):
 def format_output(text):
     """Formats output text for better readability."""
     return f"\n{text}\n"
+
+def prompt_continue():
+    """Prompts the player to press Enter to continue."""
+    input("\nPress Enter to continue...")
