@@ -14,10 +14,10 @@ class Character:
         Name: {self.name}
         Class: {self.p_class}
         Health: {self.health}
-        Attack: {self.attack}
+        Attack: {self.attack} (+{sum([item['effect']['attack'] for item in self.inventory if item['type'] == 'weapon'])})
 
         Inventory:
-        {', '.join(self.inventory) if self.inventory else 'Empty'}
+        {', '.join([item['name'] for item in self.inventory]) if self.inventory else 'Empty'}
         """
         return stats
 
@@ -40,7 +40,7 @@ class Character:
                 break
             elif choice == "2":
                 self.p_class = "Mage"
-                self.inventory.append("Magic Wand")
+                self.inventory.append({"name": "Magic Wand", "type": "weapon", "effect": {"attack": 5}})
                 break
             elif choice == "3":
                 self.p_class = "Rogue"
@@ -48,3 +48,22 @@ class Character:
                 break
             else:
                 print("Invalid choice, please select 1, 2, or 3.")
+
+    def use_item(self, item_name):
+        """Uses an item from the inventory."""
+        for item in self.inventory:
+            if item["name"].lower() == item_name.lower():
+                if item["type"] == "consumable":
+                    self.health += item["effect"]["health"]
+                    self.inventory.remove(item)
+                    print(f"You used {item['name']} and gained {item['effect']['health']} health.")
+                elif item["type"] == "weapon":
+                    self.attack += item["effect"]["attack"]
+                    self.inventory.remove(item)
+                    print(f"You equipped {item['name']} and gained {item['effect']['attack']} attack.")
+                elif item["type"] == "armor":
+                    self.health += item["effect"]["health"]
+                    self.inventory.remove(item)
+                    print(f"You equipped {item['name']} and gained {item['effect']['health']} health.")
+                return
+        print("Item not found in inventory.")

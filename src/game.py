@@ -17,7 +17,7 @@ class Game:
         """Renders the screen with the latest message and status."""
         clear_screen()
         
-        if monster: # Display monster stats if there is a monster
+        if (monster): # Display monster stats if there is a monster
             # Display the latest message
             latest_message = self.game_text[-1] if self.game_text else ""
             wrapped_text = textwrap.fill(latest_message, width=50)
@@ -40,8 +40,8 @@ class Game:
 
             # Print the split screen with the latest message, monster stats, and player stats
             for left, middle, right in zip(wrapped_text_lines, monster_stats_lines, stats_lines):
-                print(f"{left:<50} | {middle:<25} | {right:<25}")
-
+                print(f"{left:<50} | {middle:<30} | {right:<30}")
+        
         else:   # Display only player stats if there is no monster
             # Display the latest message
             latest_message = self.game_text[-1] if self.game_text else ""
@@ -121,17 +121,39 @@ class Game:
 
             # Combat mechanic loop
             if action in room.actions:
-                if isinstance(room.actions[action], Monster):
-                    monster = room.actions[action]
-                    combat(self, self.player, monster)
-                    if self.player.health <= 0:
-                        self.game_text.append(format_output("You have been defeated! Game over!"))
-                        self.render_screen()
-                        break
-                else:
-                    self.current_room = room.actions[action]
-                    self.game_text.append(format_output(f"You move to the {self.current_room} room."))
+                next_room = room.actions[action]
+                if next_room == "monster_room":
+                    if room.monsters:
+                        monsters = room.monsters
+                        if not combat(self, self.player, monsters):
+                            break  # Player ran away
+                        room.monsters = []  # Clear monsters after combat
+                        room.update_description("You are now in an empty room. What do you do?")
+                    else:
+                        self.game_text.append(format_output("The room is empty."))
+                self.current_room = next_room
+                self.game_text.append(format_output(f"You move to the {self.current_room} room."))
             else:
                 self.game_text.append(format_output("You can't do that."))
             
             self.render_screen()
+
+    def manage_inventory(self):
+        """Manages the player's inventory."""
+        while True:
+            clear_screen()
+            print("Inventory:")
+            for i, item in enumerate(self.player.inventory, 1):
+                print(f" [{i}] {item['name']}")
+            print(" [0] Back")
+
+            choice = input("\nWhat do you want to do? > ").strip().lower()
+            if choice == "0":
+                break
+            try:
+                item = self.player.inventory[int(choice) - 1]
+                self.player.use_item(item["name"])
+                prompt_continue()
+            except (ValueError, IndexError):
+                print("Invalid choice, please try again.")
+                prompt_continue()
