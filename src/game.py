@@ -74,20 +74,26 @@ class Game:
         for i, action in enumerate(room.actions.keys(), 1):
             print(f" [{i}] {action}")
         print(" [0] Quit")
+        print(" [i] Inventory")
 
     def get_action(self, room):
         """Prompts the player to choose an action."""
         self.show_actions(room)
         while True:
-            try:
-                choice = input(f"\nWhat do you do? > ").strip().lower() 
-                if choice == "0":
-                    print("You chose to quit the game.")
-                    return None  # Exiting game
-                action = list(room.actions.keys())[int(choice) - 1]
-                return action
-            except (ValueError, IndexError):
-                print("Invalid choice, please try again.")
+            choice = input(f"\nWhat do you do? > ").strip().lower()
+            if choice == "0":
+                print("You chose to quit the game.")
+                return None  # Exiting game
+            elif choice == "i":
+                self.manage_inventory()
+                self.render_screen()
+                self.show_actions(room)
+            else:
+                try:
+                    action = list(room.actions.keys())[int(choice) - 1]
+                    return action
+                except (ValueError, IndexError):
+                    print("Invalid choice, please try again.")
 
     def start_game(self):
         """Starts the game."""
@@ -129,6 +135,7 @@ class Game:
                             break  # Player ran away
                         room.monsters = []  # Clear monsters after combat
                         room.update_description("You are now in an empty room. What do you do?")
+                        room.actions.update({"Go back": "hallway", "Explore further": "another_room"})
                     else:
                         self.game_text.append(format_output("The room is empty."))
                 self.current_room = next_room
@@ -144,7 +151,7 @@ class Game:
             clear_screen()
             print("Inventory:")
             for i, item in enumerate(self.player.inventory, 1):
-                print(f" [{i}] {item['name']}")
+                print(f" [{i}] {item['name']} (+{item['effect']['health']} Health)" if item['type'] == 'consumable' else f" [{i}] {item['name']}")
             print(" [0] Back")
 
             choice = input("\nWhat do you want to do? > ").strip().lower()

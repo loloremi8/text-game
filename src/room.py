@@ -40,5 +40,9 @@ rooms = {
         "A fearsome monster appears!",
         {"fight": "monster_room"},
         [normal_monsters[random.randint(0, 2)]]
+    ),
+    "empty_room": Room(
+        "You are now in an empty room. What do you do?",
+        {"Go back": "hallway"}
     )
 }

@@ -23,7 +23,7 @@ def combat(game, player, monsters):
             # Player's and monster's damage
             player.damage = random.randint(1, player.attack)
             monster.health -= player.damage
-            monster.damage = random.randint(1, monster.attack)
+            monster.damage = max(0, random.randint(1, monster.attack) - player.defense)
             player.health -= monster.damage
 
             # Display combat results
@@ -34,16 +34,17 @@ def combat(game, player, monsters):
             if monster.health <= 0:
                 game.game_text.append(format_output(f"You have defeated the {monster.name}!"))
                 # Generate loot based on the defeated monster
-                loot = generate_loot(monster)
-                if loot:
-                    game.game_text.append(format_output(f"You found {loot['name']}!"))
-                    game.render_screen(monster)
-                    take_loot = validate_input("Do you want to take the loot? (yes/no) > ", ["yes", "no"])
-                    if take_loot == "yes":
-                        player.inventory.append(loot)
-                        game.game_text.append(format_output(f"You took the {loot['name']}!"))
-                    else:
-                        game.game_text.append(format_output(f"You left the {loot['name']} behind."))
+                loot_items = generate_loot(monster)
+                if loot_items:
+                    for loot in loot_items:
+                        game.game_text.append(format_output(f"You found {loot['name']}!"))
+                        game.render_screen(monster)
+                        take_loot = validate_input(f"Do you want to take the {loot['name']}? (yes/no) > ", ["yes", "no"])
+                        if take_loot == "yes":
+                            player.inventory.append(loot)
+                            game.game_text.append(format_output(f"You took the {loot['name']}!"))
+                        else:
+                            game.game_text.append(format_output(f"You left the {loot['name']} behind."))
                 game.render_screen(monster)
                 break
             if player.health <= 0:
