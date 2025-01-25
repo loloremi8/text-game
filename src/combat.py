@@ -14,23 +14,40 @@ def combat(game, player, monsters):
             game.render_screen(monster)
 
             # Ask the player what they want to do next
-            action = validate_input("What do you want to do? (fight/run) > ", ["fight", "run"])
+            action = validate_input("What do you want to do? (fight/run/inventory) > ", ["fight", "run", "inventory"])
             if action == "run":
                 game.game_text.append(format_output("You chose to run away!"))
                 game.render_screen(monster)
                 return False  # Player ran away
+            elif action == "inventory":
+                game.manage_inventory()
+                game.render_screen(monster)
+                continue
+            elif action == "fight":
+                attack_type = validate_input("How do you want to attack? (melee/spell) > ", ["melee", "spell"])
+                if attack_type == "spell":
+                    print("You can cast the following spells:")
+                    for spell in player.spells:
+                        print(f">{spell['name']} (Mana cost: {spell['mana_cost']}, Effect: {spell['type']} {spell['effect']})")
+                    spell_name = input("Enter the name of the spell you want to cast: ").strip().lower()
+                    spell_result = player.cast_spell(spell_name)
+                    if spell_result:
+                        if spell_result["type"] == "damage":
+                            monster.health -= spell_result["amount"]
+                            game.game_text.append(format_output(f"You cast {spell_name} and deal {spell_result['amount']} damage to the {monster.name}."))
 
-            # Player's and monster's damage
-            player.damage = random.randint(1, player.attack)
-            monster.health -= player.damage
-            monster.damage = max(0, random.randint(1, monster.attack) - player.defense)
-            player.health -= monster.damage
+                        elif spell_result["type"] == "heal":
+                            game.game_text.append(format_output(f"You cast {spell_name} and heal {spell_result['amount']} health."))
+                else:
+                    player.damage = random.randint(1, player.attack)
+                    monster.health -= player.damage
+                    monster.damage = max(0, random.randint(1, monster.attack) - player.defense)
+                    player.health -= monster.damage
+                    game.game_text.append(format_output(f"You attack the {monster.name}! You deal {player.damage} damage to the {monster.name}. The {monster.name} attacks you! The {monster.name} deals {monster.damage} damage to you."))
 
-            # Display combat results
-            game.game_text.append(format_output(f"You attack the {monster.name}!\nYou deal {player.damage} damage to the {monster.name}.\n\nThe {monster.name} attacks you!\nThe {monster.name} deals {monster.damage} damage to you."))
+                    game.render_screen(monster)
+                    continue
 
-            # Check if the player or monster has been defeated
-            game.render_screen(monster)
             if monster.health <= 0:
                 game.game_text.append(format_output(f"You have defeated the {monster.name}!"))
                 # Generate loot based on the defeated monster
@@ -50,7 +67,7 @@ def combat(game, player, monsters):
             if player.health <= 0:
                 game.game_text.append(format_output("You have been defeated!"))
                 game.render_screen(monster)
-                return True  # Player defeated
+                return False  # Player defeated
 
             prompt_continue()
 

@@ -33,8 +33,8 @@ rooms = {
         {"Open left door": "treasure_room", "Open right door": "monster_room"}
     ),
     "treasure_room": Room(
-        "You find a chest filled with gold. Congratulations, you win!",
-        {}
+        "You find a chest filled with gold.",
+        {"Go back": "hallway"}
     ),
     "monster_room": Room(
         "A fearsome monster appears!",
@@ -43,6 +43,11 @@ rooms = {
     ),
     "empty_room": Room(
         "You are now in an empty room. What do you do?",
-        {"Go back": "hallway"}
+        {"Go back": "hallway", "Explore further": "boss_room"}
+    ),
+    "boss_room": Room(
+        "You enter a grand chamber. A powerful boss awaits!",
+        {"fight": "boss_room"},
+        [special_monsters[random.randint(0, 1)]]
     )
 }

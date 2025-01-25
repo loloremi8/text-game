@@ -132,8 +132,8 @@ class Game:
                     if room.monsters:
                         monsters = room.monsters
                         if not combat(self, self.player, monsters):
-                            break  # Player ran away
-                        room.monsters = []  # Clear monsters after combat
+                            continue  # Player ran away, stay in the same room
+                        room.monsters = []
                         room.update_description("You are now in an empty room. What do you do?")
                         room.actions.update({"Go back": "hallway", "Explore further": "another_room"})
                     else:
