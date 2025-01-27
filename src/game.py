@@ -1,9 +1,10 @@
 import time
 import textwrap
 from character import Character
-from room import Room, rooms
-from monsters import Monster, normal_monsters, special_monsters
+from room import rooms
 from combat import combat
+from loot import generate_treasure_chest_loot, generate_library_loot
+from magic import fireball, heal, lightning, ice_blast, shield
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
 
 class Game:
@@ -12,6 +13,8 @@ class Game:
         self.rooms = rooms
         self.current_room = "start"
         self.game_text = []  # To store the history of game events
+        self.treasure_room_looted = False
+        self.library_looted = False
 
     def render_screen(self, monster=None):
         """Renders the screen with the latest message and status."""
@@ -73,8 +76,8 @@ class Game:
         print("\nAvailable Actions:")
         for i, action in enumerate(room.actions.keys(), 1):
             print(f" [{i}] {action}")
-        print(" [0] Quit")
         print(" [i] Inventory")
+        print(" [0] Quit Game")
 
     def get_action(self, room):
         """Prompts the player to choose an action."""
@@ -125,12 +128,82 @@ class Game:
             if action is None:  # Player chose to quit
                 break
 
+            # Handle treasure room interactions
+            if self.current_room == "treasure_room" and action == "Move closer to the chest":
+                if not self.treasure_room_looted:
+                    move_to_chest = validate_input(f"Do you want to open the chest? (yes/no) > ", ["yes", "no"])
+                    if move_to_chest == "yes":
+                        loot_items = generate_treasure_chest_loot()
+                        for loot in loot_items:
+                            if loot["type"].startswith("consumable"):
+                                effect_type = list(loot["effect"].keys())[0]
+                                loot_description = f"{loot['name']} (+{loot['effect'][effect_type]} {effect_type.capitalize()})"
+                            else:
+                                loot_description = f"{loot['name']} ({', '.join([f'{k}: {v}' for k, v in loot['effect'].items()])})"
+                            self.game_text.append(format_output(f"You found {loot_description}"))
+                            take_loot = validate_input(f"Do you want to take the {loot_description}? (yes/no) > ", ["yes", "no"])
+                            if take_loot == "yes":
+                                self.player.inventory.append(loot)
+                                self.game_text.append(format_output(f"You took the {loot['name']}!"))
+                            else:
+                                self.game_text.append(format_output(f"You left the {loot['name']} behind."))
+                        self.treasure_room_looted = True
+                    else:
+                        self.game_text.append(format_output(f"You left the chest unopened."))
+                else:
+                    self.game_text.append(format_output(f"The chest is empty."))
+                self.render_screen()
+                prompt_continue()
+                continue
+
+            # Special action for the library room
+            if self.current_room == "library" and action == "Search the room":
+                if not self.library_looted:
+                    loot_items = generate_library_loot(self.player)
+                    for loot in loot_items:
+                        if loot["type"].startswith("consumable"):
+                            effect_type = list(loot["effect"].keys())[0]
+                            if effect_type == "mana_capacity":  # Special case for mana capacity
+                                loot_description = f"{loot['name']} (Increases mana capacity)"
+                            elif effect_type == "health_capacity":  # Special case for health capacity
+                                loot_description = f"{loot['name']} (Increases health capacity)"
+                            else:
+                                loot_description = f"{loot['name']} (+{loot['effect'][effect_type]} {effect_type.capitalize()})"
+                        else:
+                            loot_description = f"{loot['name']} ({', '.join([f'{k}: {v}' for k, v in loot['effect'].items()])})"
+                        self.game_text.append(format_output(f"You found {loot_description}"))
+                        if loot["type"] == "consumable_spell":
+                            spell_name = loot["effect"]["spell"]
+                            spell = next(spell for spell in [fireball, heal, lightning, ice_blast, shield] if spell.name == spell_name)
+                            self.player.spells.append(spell)
+                            self.game_text.append(format_output(f"You learned the spell {spell_name}!"))
+                        elif loot["type"] == "consumable_mana_capacity":
+                            self.player.max_mana += loot["effect"]["mana_capacity"]
+                            self.game_text.append(format_output(f"Your mana capacity increased by {loot['effect']['mana_capacity']}!"))
+                        elif loot["type"] == "consumable_health_capacity":
+                            self.player.max_health += loot["effect"]["health_capacity"]
+                            self.game_text.append(format_output(f"Your health capacity increased by {loot['effect']['health_capacity']}!"))
+                        else:
+                            take_loot = validate_input(f"Do you want to take the {loot_description}? (yes/no) > ", ["yes", "no"])
+                            if take_loot == "yes":
+                                self.player.inventory.append(loot)
+                                self.game_text.append(format_output(f"You took the {loot['name']}!"))
+                            else:
+                                self.game_text.append(format_output(f"You left the {loot['name']} behind."))
+                    self.library_looted = True
+                else:
+                    self.game_text.append(format_output(f"The library has been thoroughly searched."))
+                self.render_screen()
+                prompt_continue()
+                continue
+
             # Combat mechanic loop
             if action in room.actions:
                 next_room = room.actions[action]
                 if next_room == "monster_room":
                     if room.monsters:
                         monsters = room.monsters
+                        room.actions.update({"Go back": "hallway"})  # Add option to go back to hallway
                         if not combat(self, self.player, monsters):
                             continue  # Player ran away, stay in the same room
                         room.monsters = []
@@ -151,16 +224,49 @@ class Game:
             clear_screen()
             print("Inventory:")
             for i, item in enumerate(self.player.inventory, 1):
-                print(f" [{i}] {item['name']} (+{item['effect']['health']} Health)" if item['type'] == 'consumable' else f" [{i}] {item['name']}")
+                if item["type"].startswith("consumable"):
+                    effect_type = list(item["effect"].keys())[0]
+                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.capitalize()})")
+                else:
+                    print(f" [{i}] {item['name']}")
             print(" [0] Back")
+            print(" [t] Trash an item")
 
             choice = input("\nWhat do you want to do? > ").strip().lower()
             if choice == "0":
                 break
+            elif choice == "t":
+                self.trash_item()
+            else:
+                try:
+                    item = self.player.inventory[int(choice) - 1]
+                    self.player.use_item(item["name"])
+                    prompt_continue()
+                except (ValueError, IndexError):
+                    print("Invalid choice, please try again.")
+                    prompt_continue()
+
+    def trash_item(self):
+        """Allows the player to trash an item from the inventory."""
+        while True:
+            clear_screen()
+            print("Trash an item:")
+            for i, item in enumerate(self.player.inventory, 1):
+                if item["type"].startswith("consumable"):
+                    effect_type = list(item["effect"].keys())[0]
+                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.capitalize()})")
+                else:
+                    print(f" [{i}] {item['name']}")
+            print(" [0] Back")
+
+            choice = input("\nWhich item do you want to trash? > ").strip().lower()
+            if choice == "0":
+                break
             try:
-                item = self.player.inventory[int(choice) - 1]
-                self.player.use_item(item["name"])
+                item = self.player.inventory.pop(int(choice) - 1)
+                print(f"You trashed {item['name']}.")
                 prompt_continue()
+                break
             except (ValueError, IndexError):
                 print("Invalid choice, please try again.")
                 prompt_continue()

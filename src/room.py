@@ -30,15 +30,15 @@ rooms = {
     ),
     "hallway": Room(
         "You enter a long hallway with doors on either side.",
-        {"Open left door": "treasure_room", "Open right door": "monster_room"}
+        {"Open left door": "treasure_room", "Open right door": "monster_room", "Go forward": "library"}
     ),
     "treasure_room": Room(
-        "You find a chest filled with gold.",
-        {"Go back": "hallway"}
+        "You find an empty room with only a chest in one of the dark corners of the room.",
+        {"Go back": "hallway", "Move closer to the chest": "move_to_chest"}
     ),
     "monster_room": Room(
         "A fearsome monster appears!",
-        {"fight": "monster_room"},
+        {"fight": "monster_room", "Go back": "hallway"},
         [normal_monsters[random.randint(0, 2)]]
     ),
     "empty_room": Room(
@@ -49,5 +49,9 @@ rooms = {
         "You enter a grand chamber. A powerful boss awaits!",
         {"fight": "boss_room"},
         [special_monsters[random.randint(0, 1)]]
+    ),
+    "library": Room(
+        "You enter a quiet library filled with ancient books.",
+        {"Go back": "hallway", "Search the room": "search_room"}
     )
 }
