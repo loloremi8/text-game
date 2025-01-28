@@ -52,6 +52,6 @@ rooms = {
     ),
     "library": Room(
         "You enter a quiet library filled with ancient books.",
-        {"Go back": "hallway", "Search the room": "search_room"}
+        {"Go back": "hallway", "Search the room": "search_library"}
     )
 }

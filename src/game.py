@@ -159,38 +159,7 @@ class Game:
             # Special action for the library room
             if self.current_room == "library" and action == "Search the room":
                 if not self.library_looted:
-                    loot_items = generate_library_loot(self.player)
-                    for loot in loot_items:
-                        if loot["type"].startswith("consumable"):
-                            effect_type = list(loot["effect"].keys())[0]
-                            if effect_type == "mana_capacity":  # Special case for mana capacity
-                                loot_description = f"{loot['name']} (Increases mana capacity)"
-                            elif effect_type == "health_capacity":  # Special case for health capacity
-                                loot_description = f"{loot['name']} (Increases health capacity)"
-                            else:
-                                loot_description = f"{loot['name']} (+{loot['effect'][effect_type]} {effect_type.capitalize()})"
-                        else:
-                            loot_description = f"{loot['name']} ({', '.join([f'{k}: {v}' for k, v in loot['effect'].items()])})"
-                        self.game_text.append(format_output(f"You found {loot_description}"))
-                        if loot["type"] == "consumable_spell":
-                            spell_name = loot["effect"]["spell"]
-                            spell = next(spell for spell in [fireball, heal, lightning, ice_blast, shield] if spell.name == spell_name)
-                            self.player.spells.append(spell)
-                            self.game_text.append(format_output(f"You learned the spell {spell_name}!"))
-                        elif loot["type"] == "consumable_mana_capacity":
-                            self.player.max_mana += loot["effect"]["mana_capacity"]
-                            self.game_text.append(format_output(f"Your mana capacity increased by {loot['effect']['mana_capacity']}!"))
-                        elif loot["type"] == "consumable_health_capacity":
-                            self.player.max_health += loot["effect"]["health_capacity"]
-                            self.game_text.append(format_output(f"Your health capacity increased by {loot['effect']['health_capacity']}!"))
-                        else:
-                            take_loot = validate_input(f"Do you want to take the {loot_description}? (yes/no) > ", ["yes", "no"])
-                            if take_loot == "yes":
-                                self.player.inventory.append(loot)
-                                self.game_text.append(format_output(f"You took the {loot['name']}!"))
-                            else:
-                                self.game_text.append(format_output(f"You left the {loot['name']} behind."))
-                    self.library_looted = True
+                    self.handle_library_loot()
                 else:
                     self.game_text.append(format_output(f"The library has been thoroughly searched."))
                 self.render_screen()
@@ -218,6 +187,41 @@ class Game:
             
             self.render_screen()
 
+    def handle_library_loot(self):
+        loot_items = generate_library_loot(self.player)
+        for loot in loot_items:
+            self.process_loot(loot)
+        self.library_looted = True
+
+    def process_loot(self, loot):
+        # Telling the player that he learned a new spell 
+        if loot["type"] == "consumable_spell":
+            spell_name = loot["effect"]["spell"]
+            spell = next(spell for spell in [fireball, heal, lightning, ice_blast, shield] if spell.name == spell_name)
+            self.player.spells.append(spell)
+            print(f"You read through the old books and grimmoires and you learned a new spell: {spell_name}!")
+            prompt_continue()
+        elif loot["type"] == "consumable_mana_capacity":
+            take_loot = validate_input(f"Do you want to take the {loot['name']} (+{loot['effect']['mana_capacity']} Mana Capacity)? (yes/no) > ", ["yes", "no"])
+            if take_loot == "yes":
+                self.player.inventory.append(loot)
+            else:
+                pass
+        elif loot["type"] == "consumable_health_capacity":
+            take_loot = validate_input(f"Do you want to take {loot['name']} (+{loot['effect']['health_capacity']} Health Capacity)? (yes/no) > ", ["yes", "no"])
+            if take_loot == "yes":
+                self.player.inventory.append(loot)
+            else:
+                pass
+        else:
+            effect_type = list(loot["effect"].keys())[0]
+            effect_value = loot["effect"][effect_type]
+            take_loot = validate_input(f"Do you want to take the {loot['name']} (+{effect_value} {effect_type.replace('_', ' ').capitalize()})? (yes/no) > ", ["yes", "no"])
+            if take_loot == "yes":
+                self.player.inventory.append(loot)
+            else:
+                pass
+
     def manage_inventory(self):
         """Manages the player's inventory."""
         while True:
@@ -226,7 +230,7 @@ class Game:
             for i, item in enumerate(self.player.inventory, 1):
                 if item["type"].startswith("consumable"):
                     effect_type = list(item["effect"].keys())[0]
-                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.capitalize()})")
+                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.replace('_', ' ').capitalize()})")
                 else:
                     print(f" [{i}] {item['name']}")
             print(" [0] Back")
