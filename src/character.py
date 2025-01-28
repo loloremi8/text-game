@@ -1,3 +1,5 @@
+from magic import fireball, heal
+
 class Character:
     def __init__(self, name="", p_class="", health=100, attack=10, defense=0, mana=0):
         self.name = name
@@ -14,7 +16,7 @@ class Character:
         self.spells = []
 
     def display_status(self):
-        """Displays the player's status and inventory on the right side."""
+        """Displays the player's status on the right side."""
         stats = f"""
         Player Stats:
         -------------
@@ -27,9 +29,6 @@ class Character:
 
         Equipped:
         Armor: {self.equipped_armor['name'] if self.equipped_armor else "None"}, Weapon: {self.equipped_weapon['name'] if self.equipped_weapon else "None"}
-
-        Inventory:
-        {', '.join([f"{item['name']} (+{item['effect']['health']} Health)" if item['type'] == 'consumable' else item['name'] for item in self.inventory]) if self.inventory else 'Empty'}
         """
         return stats
 
@@ -54,13 +53,13 @@ class Character:
                 break
             elif choice == "2":
                 self.p_class = "Mage"
-                magic_wand = {"name": "Magic Wand", "type": "weapon", "effect": {"attack": 5}}
+                magic_wand = {"name": "Magic Wand", "type": "weapon", "effect": {"attack": 0}}
                 self.inventory.append(magic_wand)
                 self.equip_weapon(magic_wand)
                 self.defense += 5
                 self.mana += 50
                 self.max_mana = self.mana
-                self.spells = [{"name": "Fireball", "mana_cost": 10, "type": "damage", "effect": 20}, {"name": "Heal", "mana_cost": 5, "type": "heal", "effect": 15}]
+                self.spells = [fireball, heal]
                 break
             elif choice == "3":
                 self.p_class = "Rogue"
@@ -73,10 +72,26 @@ class Character:
         """Uses an item from the inventory."""
         for item in self.inventory:
             if item["name"].lower() == item_name.lower():
-                if item["type"] == "consumable":
+                if item["type"] == "consumable_health":
+                    # Restores health
                     self.health = min(self.max_health, self.health + item["effect"]["health"])
                     self.inventory.remove(item)
                     print(f"You used {item['name']} and gained {item['effect']['health']} health.")
+                elif item["type"] == "consumable_mana":
+                    # Restores mana
+                    self.mana = min(self.max_mana, self.mana + item["effect"]["mana"])
+                    self.inventory.remove(item)
+                    print(f"You used {item['name']} and gained {item['effect']['mana']} mana.")
+                elif item["type"] == "consumable_mana_capacity":
+                    # Increases mana capacity
+                    self.max_mana += item["effect"]["mana_capacity"]
+                    self.inventory.remove(item)
+                    print(f"You used {item['name']} and increased your mana capacity by {item['effect']['mana_capacity']}.")
+                elif item["type"] == "consumable_health_capacity":
+                    # Increases health capacity
+                    self.max_health += item["effect"]["health_capacity"]
+                    self.inventory.remove(item)
+                    print(f"You used {item['name']} and increased your health capacity by {item['effect']['health_capacity']}.")
                 elif item["type"] == "weapon":
                     self.equip_weapon(item)
                 elif item["type"] == "armor":
@@ -87,6 +102,7 @@ class Character:
     def equip_weapon(self, weapon):
         """Equips a weapon."""
         if self.equipped_weapon:
+            self.attack -= self.equipped_weapon["effect"]["attack"]
             self.inventory.append(self.equipped_weapon)
         self.equipped_weapon = weapon
         self.attack += weapon["effect"]["attack"]
@@ -105,16 +121,7 @@ class Character:
     def cast_spell(self, spell_name):
         """Casts a spell if the player has enough mana."""
         for spell in self.spells:
-            if spell["name"].lower() == spell_name.lower():
-                if self.mana >= spell["mana_cost"]:
-                    self.mana -= spell["mana_cost"]
-                    if spell["type"] == "damage":
-                        return {"type": "damage", "amount": spell["effect"]}
-                    elif spell["type"] == "heal":
-                        self.health = min(self.max_health, self.health + spell["effect"])
-                        return {"type": "heal", "amount": spell["effect"]}
-                else:
-                    print("Not enough mana to cast the spell.")
-                    return None
+            if spell.name.lower() == spell_name.lower():
+                return spell.cast(self)
         print("Spell not found.")
         return None
