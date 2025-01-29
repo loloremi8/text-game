@@ -16,11 +16,46 @@ class Game:
         self.treasure_room_looted = False
         self.library_looted = False
 
+    def render_map(self):
+        """Renders the map in the terminal."""
+        # Define the size of the map grid
+        map_width = 5
+        map_height = 5
+
+        # Create an empty map grid
+        map_grid = [[" " for _ in range(map_width)] for _ in range(map_height)]
+
+        # Place rooms on the map grid
+        for room_name, room in self.rooms.items():
+            if room.coordinates:
+                x, y = room.coordinates
+                map_grid[y][x] = "R"  # Mark room positions with "R"
+
+        # Mark the player's current position
+        current_room = self.rooms[self.current_room]
+        if current_room.coordinates:
+            x, y = current_room.coordinates
+            map_grid[y][x] = "P"  # Mark player's position with "P"
+
+        # Render the map grid with boxes
+        print("Map:")
+        for row in map_grid:
+            row_str = ""
+            for cell in row:
+                if (cell == "R"):
+                    row_str += "[ ]"  # Room
+                elif (cell == "P"):
+                    row_str += "[P]"  # Player's position
+                else:
+                    row_str += " . "  # Blank space
+            print(row_str)
+        print("\n")
+
     def render_screen(self, monster=None):
         """Renders the screen with the latest message and status."""
         clear_screen()
         
-        if (monster): # Display monster stats if there is a monster
+        if monster:  # Display monster stats if there is a monster
             # Display the latest message
             latest_message = self.game_text[-1] if self.game_text else ""
             wrapped_text = textwrap.fill(latest_message, width=50)
@@ -45,7 +80,7 @@ class Game:
             for left, middle, right in zip(wrapped_text_lines, monster_stats_lines, stats_lines):
                 print(f"{left:<50} | {middle:<30} | {right:<30}")
         
-        else:   # Display only player stats if there is no monster
+        else:  # Display only player stats if there is no monster
             # Display the latest message
             latest_message = self.game_text[-1] if self.game_text else ""
             wrapped_text = textwrap.fill(latest_message, width=70)
@@ -67,6 +102,9 @@ class Game:
             # Print the split screen with the latest message and status
             for left, right in zip(wrapped_text_lines, stats_lines):
                 print(f"{left:<75} | {right}")
+
+        # Render the map
+        self.render_map()
 
         # Add the separator line
         print("-" * 120)
@@ -223,7 +261,7 @@ class Game:
                 pass
 
     def manage_inventory(self):
-        """Manages the player's inventory."""
+        """Manages the player's inventory and spells."""
         while True:
             clear_screen()
             print("Inventory:")
@@ -233,7 +271,10 @@ class Game:
                     print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.replace('_', ' ').capitalize()})")
                 else:
                     print(f" [{i}] {item['name']}")
-            print(" [0] Back")
+            print("\nSpells:")
+            for i, spell in enumerate(self.player.spells, 1):
+                print(f" [s{i}] {spell.name} (Mana cost: {spell.mana_cost}, Effect: {spell.spell_type} {spell.effect})")
+            print("\n [0] Back")
             print(" [t] Trash an item")
 
             choice = input("\nWhat do you want to do? > ").strip().lower()
@@ -241,6 +282,18 @@ class Game:
                 break
             elif choice == "t":
                 self.trash_item()
+            elif choice.startswith("s"):
+                try:
+                    spell_index = int(choice[1:]) - 1
+                    spell = self.player.spells[spell_index]
+                    result = spell.cast(self.player)
+                    if result:
+                        if result["type"] == "heal":
+                            print(f"You cast {spell.name} and heal {result['amount']} health.")
+                        prompt_continue()
+                except (ValueError, IndexError):
+                    print("Invalid choice, please try again.")
+                    prompt_continue()
             else:
                 try:
                     item = self.player.inventory[int(choice) - 1]
