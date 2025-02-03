@@ -1,11 +1,11 @@
 import random
-from loot import generate_loot
+from monsters import generate_loot
 from utils.helpers import format_output, prompt_continue, validate_input
 
 def combat(game, player, monsters):
     """Handles combat between the player and a list of monsters."""
     for monster in monsters:
-        game.game_text.append(format_output(f"A wild {monster.name} appears!"))
+        game.game_text.append(format_output(f"A {monster.name} appears!"))
         game.render_screen(monster)
         prompt_continue()
 
@@ -73,6 +73,7 @@ def combat(game, player, monsters):
                         else:
                             game.game_text.append(format_output(f"You left the {loot['name']} behind."))
                 game.render_screen(monster)
+                prompt_continue()
                 break
             if player.health <= 0:
                 game.game_text.append(format_output("You have been defeated!"))

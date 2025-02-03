@@ -112,6 +112,7 @@ class Character:
     def equip_armor(self, armor):
         """Equips armor."""
         if self.equipped_armor:
+            self.defense -= self.equipped_armor["effect"]["defense"]
             self.inventory.append(self.equipped_armor)
         self.equipped_armor = armor
         self.defense += armor["effect"]["defense"]

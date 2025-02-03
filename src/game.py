@@ -1,11 +1,19 @@
 import time
 import textwrap
 from character import Character
-from room import rooms
 from combat import combat
 from loot import generate_treasure_chest_loot, generate_library_loot
 from magic import fireball, heal, lightning, ice_blast, shield
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
+from rooms.room import rooms
+from rooms.treasure_room import handle_treasure_room
+from rooms.library import handle_library_loot
+from rooms.armory import handle_armory_loot
+from rooms.kitchen import handle_kitchen_loot
+from rooms.throne_room import handle_throne_room
+from rooms.dining_hall import handle_dining_hall_loot
+from rooms.garden import handle_garden_loot
+from rooms.fountain import handle_fountain_interaction
 
 class Game:
     def __init__(self):
@@ -13,8 +21,12 @@ class Game:
         self.rooms = rooms
         self.current_room = "start"
         self.game_text = []  # To store the history of game events
-        self.treasure_room_looted = False
-        self.library_looted = False
+        self.treasure_room_looted = False   # Add treasure_room_looted attribute
+        self.library_looted = False # Add library_looted attribute
+        self.kitchen_looted = False # Add kitchen_looted attribute
+        self.dining_hall_looted = False # Add dining_hall_looted attribute
+        self.garden_looted = False  # Add garden_looted attribute
+        self.fountain_interactions = 0  # Add fountain_interactions attribute
 
     def render_map(self):
         """Renders the map in the terminal."""
@@ -42,9 +54,9 @@ class Game:
         for row in map_grid:
             row_str = ""
             for cell in row:
-                if (cell == "R"):
+                if cell == "R":
                     row_str += "[ ]"  # Room
-                elif (cell == "P"):
+                elif cell == "P":
                     row_str += "[P]"  # Player's position
                 else:
                     row_str += " . "  # Blank space
@@ -155,7 +167,7 @@ class Game:
             room = self.rooms[self.current_room]
             self.game_text.append(format_output(room.describe()))  # Append room description to game text
             self.render_screen()
-            
+        
             if not room.actions:
                 self.game_text.append(format_output("Game over!"))
                 self.render_screen()
@@ -168,40 +180,42 @@ class Game:
 
             # Handle treasure room interactions
             if self.current_room == "treasure_room" and action == "Move closer to the chest":
-                if not self.treasure_room_looted:
-                    move_to_chest = validate_input(f"Do you want to open the chest? (yes/no) > ", ["yes", "no"])
-                    if move_to_chest == "yes":
-                        loot_items = generate_treasure_chest_loot()
-                        for loot in loot_items:
-                            if loot["type"].startswith("consumable"):
-                                effect_type = list(loot["effect"].keys())[0]
-                                loot_description = f"{loot['name']} (+{loot['effect'][effect_type]} {effect_type.capitalize()})"
-                            else:
-                                loot_description = f"{loot['name']} ({', '.join([f'{k}: {v}' for k, v in loot['effect'].items()])})"
-                            self.game_text.append(format_output(f"You found {loot_description}"))
-                            take_loot = validate_input(f"Do you want to take the {loot_description}? (yes/no) > ", ["yes", "no"])
-                            if take_loot == "yes":
-                                self.player.inventory.append(loot)
-                                self.game_text.append(format_output(f"You took the {loot['name']}!"))
-                            else:
-                                self.game_text.append(format_output(f"You left the {loot['name']} behind."))
-                        self.treasure_room_looted = True
-                    else:
-                        self.game_text.append(format_output(f"You left the chest unopened."))
-                else:
-                    self.game_text.append(format_output(f"The chest is empty."))
-                self.render_screen()
-                prompt_continue()
+                handle_treasure_room(self)
                 continue
 
             # Special action for the library room
             if self.current_room == "library" and action == "Search the room":
-                if not self.library_looted:
-                    self.handle_library_loot()
-                else:
-                    self.game_text.append(format_output(f"The library has been thoroughly searched."))
-                self.render_screen()
-                prompt_continue()
+                handle_library_loot(self)
+                continue
+
+            # Special action for the armory room
+            if self.current_room == "armory" and action == "Search the armory":
+                handle_armory_loot(self)
+                continue
+
+            # Special action for the kitchen room
+            if self.current_room == "kitchen" and action == "Search the kitchen":
+                handle_kitchen_loot(self)
+                continue
+
+            # Special action for the dining hall
+            if self.current_room == "dining_hall" and action == "Search the dining hall":
+                handle_dining_hall_loot(self)
+                continue
+
+            # Special action for the garden
+            if self.current_room == "garden" and action == "Search the garden":
+                handle_garden_loot(self)
+                continue
+
+            # Special action for the fountain
+            if self.current_room == "fountain" and action == "Interact with the fountain":
+                handle_fountain_interaction(self)
+                continue
+
+            # Special action for the throne room
+            if self.current_room == "throne_room" and action == "Approach the throne":
+                handle_throne_room(self)
                 continue
 
             # Combat mechanic loop
@@ -215,14 +229,14 @@ class Game:
                             continue  # Player ran away, stay in the same room
                         room.monsters = []
                         room.update_description("You are now in an empty room. What do you do?")
-                        room.actions.update({"Go back": "hallway", "Explore further": "another_room"})
+                        room.actions.update({"Go back": "hallway", "Explore further": "dining_hall"})
                     else:
                         self.game_text.append(format_output("The room is empty."))
                 self.current_room = next_room
                 self.game_text.append(format_output(f"You move to the {self.current_room} room."))
             else:
                 self.game_text.append(format_output("You can't do that."))
-            
+        
             self.render_screen()
 
     def handle_library_loot(self):
