@@ -82,4 +82,10 @@ def combat(game, player, monsters):
 
             prompt_continue()
 
+        # After defeating the current monster, check if there are more monsters to fight
+        if player.health > 0 and monster.health <= 0:
+            game.game_text.append(format_output(f"You have defeated the {monster.name}!"))
+            game.render_screen(monster)
+            prompt_continue()
+
     return True  # All monsters defeated
