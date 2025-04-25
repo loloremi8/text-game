@@ -2,8 +2,8 @@ import time
 import textwrap
 from character import Character
 from combat import combat
-from loot import generate_treasure_chest_loot, generate_library_loot
-from magic import fireball, heal, lightning, ice_blast, shield
+from items.loot import generate_treasure_chest_loot, generate_library_loot
+from combat.magic import fireball, heal, lightning, ice_blast, shield
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
 from rooms.room import rooms
 from rooms.treasure_room import handle_treasure_room

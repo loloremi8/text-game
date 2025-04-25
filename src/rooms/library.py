@@ -1,5 +1,5 @@
-from loot import generate_library_loot
-from magic import fireball, heal, lightning, ice_blast, shield
+from items.loot import generate_library_loot
+from combat.magic import fireball, heal, lightning, ice_blast, shield
 from utils.helpers import format_output, validate_input, prompt_continue
 
 def handle_library_loot(game):

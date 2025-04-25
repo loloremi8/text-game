@@ -1,5 +1,5 @@
 import random
-from monsters import normal_monsters, special_monsters
+from combat.monsters import normal_monsters, special_monsters
 
 class Room:
     def __init__(self, description, actions, monsters=None, coordinates=None):

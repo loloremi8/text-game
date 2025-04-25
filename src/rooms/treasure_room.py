@@ -1,5 +1,4 @@
-import random
-from loot import generate_treasure_chest_loot
+from items.loot import generate_treasure_chest_loot
 from utils.helpers import format_output, validate_input, prompt_continue
 
 def handle_treasure_room(game):

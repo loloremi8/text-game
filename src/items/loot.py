@@ -1,5 +1,5 @@
 import random
-from magic import fireball, heal, lightning, ice_blast, shield
+from combat.magic import fireball, heal, lightning, ice_blast, shield
 
 RARITY_LEVELS = ["common", "uncommon", "rare", "epic", "legendary"]
 

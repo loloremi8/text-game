@@ -1,4 +1,4 @@
-from loot import get_kitchen_loot
+from items.loot import get_kitchen_loot
 from utils.helpers import format_output, validate_input, prompt_continue
 
 def handle_kitchen_loot(game):

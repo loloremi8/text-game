@@ -1,4 +1,4 @@
-from magic import fireball, heal
+from combat.magic import fireball, heal
 
 class Character:
     def __init__(self, name="", p_class="", health=100, attack=10, defense=0, mana=0):
