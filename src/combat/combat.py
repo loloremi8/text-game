@@ -1,5 +1,5 @@
 import random
-from combat.monsters import generate_loot
+from combat import monsters
 from utils.helpers import format_output, prompt_continue, validate_input
 
 def combat(game, player, monsters):
@@ -57,7 +57,7 @@ def combat(game, player, monsters):
             if monster.health <= 0:
                 game.game_text.append(format_output(f"You have defeated the {monster.name}!"))
                 # Generate loot based on the defeated monster
-                loot_items = generate_loot(monster)
+                loot_items = monsters.generate_loot(monster)
                 if loot_items:
                     for loot in loot_items:
                         if loot["type"].startswith("consumable"):

@@ -1,4 +1,4 @@
-from combat.magic import fireball, heal
+from combat import magic
 
 class Character:
     def __init__(self, name="", p_class="", health=100, attack=10, defense=0, mana=0):
@@ -59,7 +59,7 @@ class Character:
                 self.defense += 5
                 self.mana += 50
                 self.max_mana = self.mana
-                self.spells = [fireball, heal]
+                self.spells = [magic.fireball, magic.heal]
                 break
             elif choice == "3":
                 self.p_class = "Rogue"

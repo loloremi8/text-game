@@ -1,9 +1,8 @@
 import time
 import textwrap
-from character import Character
-from combat import combat
+from core import character
+from combat import combat, magic
 from items.loot import generate_treasure_chest_loot, generate_library_loot
-from combat.magic import fireball, heal, lightning, ice_blast, shield
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
 from rooms.room import rooms
 from rooms.treasure_room import handle_treasure_room
@@ -17,7 +16,7 @@ from rooms.fountain import handle_fountain_interaction
 
 class Game:
     def __init__(self):
-        self.player = Character()
+        self.player = character.Character()
         self.rooms = rooms
         self.current_room = "start"
         self.game_text = []  # To store the history of game events
@@ -249,7 +248,7 @@ class Game:
         # Telling the player that he learned a new spell 
         if loot["type"] == "consumable_spell":
             spell_name = loot["effect"]["spell"]
-            spell = next(spell for spell in [fireball, heal, lightning, ice_blast, shield] if spell.name == spell_name)
+            spell = next(spell for spell in [magic.fireball, magic.heal,magic. lightning, magic.ice_blast, magic.shield] if spell.name == spell_name)
             self.player.spells.append(spell)
             print(f"You read through the old books and grimmoires and you learned a new spell: {spell_name}!")
             prompt_continue()
