@@ -2,6 +2,7 @@ import time
 import textwrap
 from core import character
 from combat import combat, magic
+from combat.combat import combat
 from items.loot import generate_treasure_chest_loot, generate_library_loot
 from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
 from rooms.room import rooms
@@ -150,7 +151,7 @@ class Game:
     def start_game(self):
         """Starts the game."""
         clear_screen()
-        print("Welcome to the Fantasy Adventure Game!")
+        print("Welcome to the Dungeon crawling game!")
         self.player.choose_name()
         self.player.choose_class()
         message = format_output(f"Good luck on your journey, {self.player.name} the {self.player.p_class}!")
@@ -276,45 +277,39 @@ class Game:
     def manage_inventory(self):
         """Manages the player's inventory and spells."""
         while True:
-            clear_screen()
-            print("Inventory:")
+            print("\nYour Inventory:")
+            if not self.player.inventory:
+                print("Your inventory is empty.")
+                break
+
             for i, item in enumerate(self.player.inventory, 1):
-                if item["type"].startswith("consumable"):
-                    effect_type = list(item["effect"].keys())[0]
-                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.replace('_', ' ').capitalize()})")
+                if item["type"] == "consumable_health":
+                    print(f" [{i}] {item['name']} (Restores {item['effect']['health']} health)")
+                elif item["type"] == "consumable_mana":
+                    print(f" [{i}] {item['name']} (Restores {item['effect']['mana']} mana)")
+                elif item["type"] == "consumable_health_capacity":
+                    print(f" [{i}] {item['name']} (Increases max health by {item['effect']['health_capacity']})")
+                elif item["type"] == "consumable_mana_capacity":
+                    print(f" [{i}] {item['name']} (Increases max mana by {item['effect']['mana_capacity']})")
+                elif item["type"] == "weapon":
+                    print(f" [{i}] {item['name']} (Attack: +{item['effect']['attack']})")
+                elif item["type"] == "armor":
+                    print(f" [{i}] {item['name']} (Defense: +{item['effect']['defense']})")
                 else:
                     print(f" [{i}] {item['name']}")
-            print("\nSpells:")
-            for i, spell in enumerate(self.player.spells, 1):
-                print(f" [s{i}] {spell.name} (Mana cost: {spell.mana_cost}, Effect: {spell.spell_type} {spell.effect})")
-            print("\n [0] Back")
-            print(" [t] Trash an item")
 
-            choice = input("\nWhat do you want to do? > ").strip().lower()
-            if choice == "0":
+            # Prompt the player to choose an item or exit
+            choice = input("\nChoose an item to use or type 'exit' to leave inventory: ").strip().lower()
+            if choice == "exit":
                 break
-            elif choice == "t":
-                self.trash_item()
-            elif choice.startswith("s"):
-                try:
-                    spell_index = int(choice[1:]) - 1
-                    spell = self.player.spells[spell_index]
-                    result = spell.cast(self.player)
-                    if result:
-                        if result["type"] == "heal":
-                            print(f"You cast {spell.name} and heal {result['amount']} health.")
-                        prompt_continue()
-                except (ValueError, IndexError):
-                    print("Invalid choice, please try again.")
-                    prompt_continue()
+
+            # Validate the choice and use the item
+            if choice.isdigit() and 1 <= int(choice) <= len(self.player.inventory):
+                item = self.player.inventory[int(choice) - 1]
+                self.player.use_item(item["name"])
+                prompt_continue()
             else:
-                try:
-                    item = self.player.inventory[int(choice) - 1]
-                    self.player.use_item(item["name"])
-                    prompt_continue()
-                except (ValueError, IndexError):
-                    print("Invalid choice, please try again.")
-                    prompt_continue()
+                print("Invalid choice. Please try again.")
 
     def trash_item(self):
         """Allows the player to trash an item from the inventory."""
