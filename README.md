@@ -7,16 +7,30 @@ This text-based game allows players to explore different rooms, interact with ch
 ```
 text-game
 ├── src
-│   ├── main.py          # Entry point for the game
-│   ├── character.py     # Defines the Character class
-│   ├── room.py          # Contains the Room class
-│   ├── game.py          # Manages overall game logic
-|   ├── monsters.py      # Defines monsters and their stats
-|   ├── combat.py        # Defines combat mechanics
-│   └── utils
-│       └── helpers.py   # Utility functions
-├── requirements.txt     # Project dependencies
-└── README.md            # Project documentation
+│    ├── main.py                 # Entry point for the game
+│    ├── core
+│    │    ├── character.py       # Player class, stats, and item usage
+│    │    ├── game.py            # Main game loop and screen rendering
+│    │    └── inventory.py       # Inventory, equipment, and item management
+│    ├── combat
+│    │    ├── combat.py          # Turn-based combat system
+│    │    ├── magic.py           # Spell definitions
+│    │    └── monsters.py        # Monster classes and loot tables
+│    ├── items
+│    │    └── loot.py            # Room-specific loot generation
+│    ├── rooms
+│    │    ├── room.py            # Room class and dungeon layout
+│    │    ├── armory.py          # Armory room event
+│    │    ├── dining_hall.py     # Dining hall room event
+│    │    ├── fountain.py        # Fountain room event
+│    │    ├── garden.py          # Garden room event
+│    │    ├── kitchen.py         # Kitchen room event
+│    │    ├── library.py         # Library room event
+│    │    ├── throne_room.py     # Throne room boss encounter
+│    │    └── treasure_room.py   # Treasure room event
+│    └── utils
+│         └── helpers.py         # Utility functions
+└── README.md                    # Project documentation
 ```
 
 ## Setup Instructions
@@ -28,19 +42,8 @@ text-game
    ```
    cd text-game
    ```
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
 
 ## Gameplay
 - Start the game by running `src/main.py`.
 - Follow the prompts to choose actions, explore rooms, and interact with characters.
 - Use the provided commands to navigate and make choices.
-
-## Contribution Guidelines
-- Fork the repository and create a new branch for your feature or bug fix.
-- Submit a pull request with a clear description of your changes.
-
-[comment]: <> (## License)
-[comment]: <> (This project is licensed under the MIT License. See the LICENSE file for details.)

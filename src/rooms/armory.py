@@ -1,21 +1,43 @@
-from items.loot import get_additional_loot
-from utils.helpers import format_output, validate_input, prompt_continue
+from items.loot import get_armory_loot
+from utils.helpers import format_output, validate_input, prompt_continue, format_loot_description
 
 def handle_armory_loot(game):
-    """Handles the loot generation and interaction in the armory room."""
-    loot_items = get_additional_loot()
-    for loot in loot_items:
-        if loot["type"].startswith("consumable"):
-            effect_type = list(loot["effect"].keys())[0]
-            loot_description = f"{loot['name']} (+{loot['effect'][effect_type]} {effect_type.capitalize()})"
-        else:
-            loot_description = f"{loot['name']} ({', '.join([f'{k}: {v}' for k, v in loot['effect'].items()])})"
-        game.game_text.append(format_output(f"You found {loot_description}"))
-        take_loot = validate_input(f"Do you want to take the {loot_description}? (yes/no) > ", ["yes", "no"])
-        if take_loot == "yes":
-            game.player.inventory.append(loot)
-            game.game_text.append(format_output(f"You took the {loot['name']}!"))
-        else:
-            game.game_text.append(format_output(f"You left the {loot['name']} behind."))
+    """Handles searching the armory."""
+    if game.armory_looted:
+        game.game_text = format_output("You've already searched the armory.")
+        game.render_screen()
+        prompt_continue()
+        return
+
+    game.game_text = format_output("You search through the weapon racks and armor stands...")
     game.render_screen()
     prompt_continue()
+
+    loot_items = get_armory_loot()
+    if not loot_items:
+        game.game_text = format_output("You find nothing useful.")
+        game.render_screen()
+        prompt_continue()
+        game.armory_looted = True
+        return
+
+    for loot in loot_items:
+        loot_description = format_loot_description(loot)
+        game.game_text = format_output(f"You found: {loot_description}")
+        game.render_screen()
+
+        take = validate_input(
+            f"Take the {loot['name']}? (yes/no) > ",
+            ["yes", "no"],
+            {"y": "yes", "n": "no"}
+        )
+        if take == "yes":
+            game.player.inventory.append(loot)
+            game.game_text = format_output(f"You took the {loot['name']}!")
+        else:
+            game.game_text = format_output(f"You left the {loot['name']} behind.")
+
+        game.render_screen()
+        prompt_continue()
+
+    game.armory_looted = True

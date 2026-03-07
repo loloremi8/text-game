@@ -1,12 +1,12 @@
 import random
-from combat.monsters import normal_monsters, special_monsters
+from combat.monsters import normal_monsters, special_monsters, boss_monsters
 
 class Room:
     def __init__(self, description, actions, monsters=None, coordinates=None):
         self.description = description
         self.actions = actions
-        self.monsters = monsters if monsters else []
-        self.coordinates = coordinates  # Add coordinates to the Room class
+        self.monsters = [m.clone() for m in monsters] if monsters else []
+        self.coordinates = coordinates
 
     def add_exit(self, direction, room):
         self.actions[direction] = room
@@ -46,11 +46,6 @@ rooms = {
         [random.choice(normal_monsters) for _ in range(random.randint(1, 2))],
         coordinates=(3, 3)
     ),
-    "empty_room": Room(
-        "You are now in an empty room. What do you do?",
-        {"Go back": "hallway", "Explore further": "dining_hall"},
-        coordinates=(3, 3)
-    ),
     "boss_room": Room(
         "You enter a grand chamber. A powerful boss awaits!",
         {"fight": "boss_room", "Go back": "library"},
@@ -69,7 +64,7 @@ rooms = {
     ),
     "dining_hall": Room(
         "You enter a grand dining hall with a long table set for a feast.",
-        {"Go back": "empty_room", "Search the dining hall": "search_dining_hall", "Explore further": "kitchen"},
+        {"Go back": "monster_room", "Search the dining hall": "search_dining_hall", "Explore further": "kitchen"},
         coordinates=(4, 3)
     ),
     "kitchen": Room(
@@ -90,6 +85,7 @@ rooms = {
     "throne_room": Room(
         "You enter a grand throne room with a majestic throne at the end.",
         {"Go back": "boss_room", "Approach the throne": "approach_throne", "Open left door": "exit"},
+        [random.choice(boss_monsters)],
         coordinates=(2, 0)
     ),
     "exit": Room(

@@ -24,4 +24,4 @@ ice_blast = Spell("Ice Blast", 12, "damage", 25)
 
 # Defensive spells
 heal = Spell("Heal", 5, "heal", 15)
-shield = Spell("Shield", 5, "heal", 10)
+shield = Spell("Shield", 8, "heal", 30)

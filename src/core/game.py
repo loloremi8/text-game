@@ -1,10 +1,9 @@
 import time
+import shutil
 import textwrap
 from core import character
-from combat import combat, magic
-from combat.combat import combat
-from items.loot import generate_treasure_chest_loot, generate_library_loot
-from utils.helpers import clear_screen, validate_input, format_output, prompt_continue
+from combat.combat import combat as run_combat
+from utils.helpers import clear_screen, format_output, prompt_continue, format_loot_description
 from rooms.room import rooms
 from rooms.treasure_room import handle_treasure_room
 from rooms.library import handle_library_loot
@@ -14,138 +13,140 @@ from rooms.throne_room import handle_throne_room
 from rooms.dining_hall import handle_dining_hall_loot
 from rooms.garden import handle_garden_loot
 from rooms.fountain import handle_fountain_interaction
+from core import inventory
+
+def get_terminal_width():
+    """Returns the current terminal width."""
+    return shutil.get_terminal_size((80, 24)).columns
 
 class Game:
     def __init__(self):
         self.player = character.Character()
         self.rooms = rooms
         self.current_room = "start"
-        self.game_text = []  # To store the history of game events
-        self.treasure_room_looted = False   # Add treasure_room_looted attribute
-        self.library_looted = False # Add library_looted attribute
-        self.kitchen_looted = False # Add kitchen_looted attribute
-        self.dining_hall_looted = False # Add dining_hall_looted attribute
-        self.garden_looted = False  # Add garden_looted attribute
-        self.fountain_interactions = 0  # Add fountain_interactions attribute
+        self.game_text = ""  # instead of []
+        self.treasure_room_looted = False
+        self.library_looted = False
+        self.kitchen_looted = False
+        self.dining_hall_looted = False
+        self.garden_looted = False
+        self.armory_looted = False
+        self.fountain_interactions = 0
+        self.boss_room_cleared = False   # For the boss_room (Dark Knight/Lich)
+        self.dragon_defeated = False      # For the throne_room (Dragon)
 
     def render_map(self):
         """Renders the map in the terminal."""
-        # Define the size of the map grid
         map_width = 5
         map_height = 5
-
-        # Create an empty map grid
         map_grid = [[" " for _ in range(map_width)] for _ in range(map_height)]
 
-        # Place rooms on the map grid
         for room_name, room in self.rooms.items():
             if room.coordinates:
                 x, y = room.coordinates
-                map_grid[y][x] = "R"  # Mark room positions with "R"
+                if 0 <= y < map_height and 0 <= x < map_width:
+                    map_grid[y][x] = "R"
 
-        # Mark the player's current position
         current_room = self.rooms[self.current_room]
         if current_room.coordinates:
             x, y = current_room.coordinates
-            map_grid[y][x] = "P"  # Mark player's position with "P"
+            if 0 <= y < map_height and 0 <= x < map_width:
+                map_grid[y][x] = "P"
 
-        # Render the map grid with boxes
         print("Map:")
         for row in map_grid:
             row_str = ""
             for cell in row:
                 if cell == "R":
-                    row_str += "[ ]"  # Room
+                    row_str += "[ ]"
                 elif cell == "P":
-                    row_str += "[P]"  # Player's position
+                    row_str += "[P]"
                 else:
-                    row_str += " . "  # Blank space
+                    row_str += " . "
             print(row_str)
-        print("\n")
+        print()
 
     def render_screen(self, monster=None):
-        """Renders the screen with the latest message and status."""
+        """Renders the screen with the latest message and status, adapting to terminal width."""
         clear_screen()
-        
-        if monster:  # Display monster stats if there is a monster
-            # Display the latest message
-            latest_message = self.game_text[-1] if self.game_text else ""
-            wrapped_text = textwrap.fill(latest_message, width=50)
-        
-            # Display the wrapped text, monster stats, and player stats        
-            stats = self.player.display_status()
-            stats_lines = stats.split("\n")
+        term_width = get_terminal_width()
+        separator = "─" * term_width
 
-            monster_stats = monster.display_status()
-            monster_stats_lines = monster_stats.split("\n")
+        if monster:
+            col_count = 3
+            divider_space = 6
+            usable = term_width - divider_space
+            col_width = max(20, usable // col_count)
 
-            # Calculate the maximum number of lines for wrapping
-            max_lines = max(len(wrapped_text.split("\n")), len(stats_lines), len(monster_stats_lines))
+            text_width = col_width
+            monster_width = col_width
+            player_width = usable - text_width - monster_width
 
-            # Padding lines if the text, monster stats, or player stats are shorter
-            wrapped_text_lines = wrapped_text.split("\n")
+            latest_message = self.game_text if self.game_text else ""
+            wrapped_text_lines = textwrap.fill(latest_message, width=text_width).split("\n")
+
+            stats_lines = self.player.display_status().split("\n")
+            monster_stats_lines = monster.display_status().split("\n")
+
+            max_lines = max(len(wrapped_text_lines), len(stats_lines), len(monster_stats_lines))
             wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
             stats_lines += [""] * (max_lines - len(stats_lines))
             monster_stats_lines += [""] * (max_lines - len(monster_stats_lines))
 
-            # Print the split screen with the latest message, monster stats, and player stats
             for left, middle, right in zip(wrapped_text_lines, monster_stats_lines, stats_lines):
-                print(f"{left:<50} | {middle:<30} | {right:<30}")
-        
-        else:  # Display only player stats if there is no monster
-            # Display the latest message
-            latest_message = self.game_text[-1] if self.game_text else ""
-            wrapped_text = textwrap.fill(latest_message, width=70)
-        
-            # Display the wrapped text, monster stats, and player stats        
-            stats = self.player.display_status()
-            stats_lines = stats.split("\n")
+                print(f"{left:<{text_width}} │ {middle:<{monster_width}} │ {right:<{player_width}}")
+        else:
+            divider_space = 3
+            usable = term_width - divider_space
+            text_width = max(20, int(usable * 0.65))
+            stats_width = usable - text_width
 
-            monster_stats_lines = [""] * len(stats_lines)
+            latest_message = self.game_text if self.game_text else ""
+            wrapped_text_lines = textwrap.fill(latest_message, width=text_width).split("\n")
 
-            # Calculate the maximum number of lines for wrapping
-            max_lines = max(len(wrapped_text.split("\n")), len(stats_lines))
+            stats_lines = self.player.display_status().split("\n")
 
-            # Padding lines if the text or stats are shorter
-            wrapped_text_lines = wrapped_text.split("\n")
+            max_lines = max(len(wrapped_text_lines), len(stats_lines))
             wrapped_text_lines += [""] * (max_lines - len(wrapped_text_lines))
             stats_lines += [""] * (max_lines - len(stats_lines))
 
-            # Print the split screen with the latest message and status
             for left, right in zip(wrapped_text_lines, stats_lines):
-                print(f"{left:<75} | {right}")
+                print(f"{left:<{text_width}} │ {right}")
 
-        # Render the map
+        print(separator)
         self.render_map()
-
-        # Add the separator line
-        print("-" * 120)
+        print(separator)
 
     def show_actions(self, room):
         """Show available actions for the current room."""
         print("\nAvailable Actions:")
         for i, action in enumerate(room.actions.keys(), 1):
-            print(f" [{i}] {action}")
-        print(" [i] Inventory")
-        print(" [0] Quit Game")
+            print(f"  [{i}] {action}")
+        print("  [i] Inventory")
+        print("  [0] Quit Game")
 
     def get_action(self, room):
         """Prompts the player to choose an action."""
         self.show_actions(room)
         while True:
-            choice = input(f"\nWhat do you do? > ").strip().lower()
+            choice = input("\nWhat do you do? > ").strip().lower()
             if choice == "0":
                 print("You chose to quit the game.")
-                return None  # Exiting game
+                return None
             elif choice == "i":
                 self.manage_inventory()
                 self.render_screen()
                 self.show_actions(room)
+                continue
             else:
                 try:
-                    action = list(room.actions.keys())[int(choice) - 1]
-                    return action
-                except (ValueError, IndexError):
+                    idx = int(choice) - 1
+                    actions = list(room.actions.keys())
+                    if 0 <= idx < len(actions):
+                        return actions[idx]
+                    else:
+                        print("Invalid choice, please try again.")
+                except ValueError:
                     print("Invalid choice, please try again.")
 
     def start_game(self):
@@ -155,183 +156,142 @@ class Game:
         self.player.choose_name()
         self.player.choose_class()
         message = format_output(f"Good luck on your journey, {self.player.name} the {self.player.p_class}!")
-        self.game_text.append(message)
+        self.game_text = message
         self.render_screen()
-        time.sleep(2)  # Add delay to display the message
-        prompt_continue()  # Prompt the player to continue
+        time.sleep(2)
+        prompt_continue()
         self.game_loop()
 
     def game_loop(self):
         """Main game loop."""
         while True:
             room = self.rooms[self.current_room]
-            self.game_text.append(format_output(room.describe()))  # Append room description to game text
+            self.game_text = format_output(room.describe())
             self.render_screen()
-        
+
             if not room.actions:
-                self.game_text.append(format_output("Game over!"))
+                self.game_text = format_output("Game over!")
                 self.render_screen()
-                prompt_continue()  # Prompt the player to continue
+                prompt_continue()
                 break
 
             action = self.get_action(room)
-            if action is None:  # Player chose to quit
+            if action is None:
                 break
 
-            # Handle treasure room interactions
+            # Handle treasure room interaction
             if self.current_room == "treasure_room" and action == "Move closer to the chest":
                 handle_treasure_room(self)
                 continue
 
-            # Special action for the library room
+            # Handle library search
             if self.current_room == "library" and action == "Search the room":
-                handle_library_loot(self)
+                if not self.library_looted:
+                    handle_library_loot(self)
+                else:
+                    self.game_text = format_output("You've already searched the library.")
+                    self.render_screen()
+                    prompt_continue()
                 continue
 
-            # Special action for the armory room
+            # Handle armory search
             if self.current_room == "armory" and action == "Search the armory":
                 handle_armory_loot(self)
                 continue
 
-            # Special action for the kitchen room
+            # Handle kitchen search
             if self.current_room == "kitchen" and action == "Search the kitchen":
                 handle_kitchen_loot(self)
                 continue
 
-            # Special action for the dining hall
+            # Handle dining hall search
             if self.current_room == "dining_hall" and action == "Search the dining hall":
                 handle_dining_hall_loot(self)
                 continue
 
-            # Special action for the garden
+            # Handle garden search
             if self.current_room == "garden" and action == "Search the garden":
                 handle_garden_loot(self)
                 continue
 
-            # Special action for the fountain
+            # Handle fountain interaction
             if self.current_room == "fountain" and action == "Interact with the fountain":
                 handle_fountain_interaction(self)
                 continue
 
-            # Special action for the throne room
+            # Handle throne room interaction
             if self.current_room == "throne_room" and action == "Approach the throne":
                 handle_throne_room(self)
                 continue
 
-            # Combat mechanic loop
+            # Handle exit / winning the game
+            if self.current_room == "exit" and action == "Leave the dungeon":
+                if not self.dragon_defeated:
+                    self.game_text = format_output("The exit is blocked by a magical barrier. You must defeat the Dragon first!")
+                    self.render_screen()
+                    prompt_continue()
+                    self.current_room = "throne_room"
+                    continue
+                else:
+                    self.game_text = format_output(f"Congratulations {self.player.name}! You have escaped the dungeon and defeated the Dragon! You win!")
+                    self.render_screen()
+                    prompt_continue()
+                    break
+
+            # Navigate to next room
             if action in room.actions:
                 next_room = room.actions[action]
-                if next_room == "monster_room":
-                    if room.monsters:
-                        monsters = room.monsters
-                        room.actions.update({"Go back": "hallway"})  # Add option to go back to hallway
-                        if not combat(self, self.player, monsters):
-                            continue  # Player ran away, stay in the same room
-                        room.monsters = []
-                        room.update_description("You are now in an empty room. What do you do?")
-                        room.actions.update({"Go back": "hallway", "Explore further": "dining_hall"})
+
+                # Monster room combat
+                if next_room == "monster_room" or self.current_room == "monster_room":
+                    target_room = self.rooms.get("monster_room", room)
+                    if target_room.monsters:
+                        self.current_room = "monster_room"
+                        result = run_combat(self, self.player, target_room.monsters)
+                        if self.player.health <= 0:
+                            self.game_text = format_output("Your journey ends here...")
+                            self.render_screen()
+                            prompt_continue()
+                            return
+                        if not result:
+                            self.current_room = "hallway"
+                            continue
+                        target_room.monsters = []
+                        target_room.update_description("You are now in an empty room. What do you do?")
+                        target_room.actions = {"Go back": "hallway", "Explore further": "dining_hall"}
+                        self.current_room = "monster_room"
+                        continue
                     else:
-                        self.game_text.append(format_output("The room is empty."))
+                        self.current_room = next_room
+                        continue
+
+                # Boss room combat
+                if next_room == "boss_room":
+                    boss_room = self.rooms["boss_room"]
+                    self.current_room = "boss_room"
+                    if boss_room.monsters and not self.boss_room_cleared:
+                        result = run_combat(self, self.player, boss_room.monsters)
+                        if self.player.health <= 0:
+                            self.game_text = format_output("Your journey ends here...")
+                            self.render_screen()
+                            prompt_continue()
+                            return
+                        if not result:
+                            self.current_room = "library"
+                            continue
+                        self.boss_room_cleared = True
+                        boss_room.monsters = []
+                        boss_room.update_description("The grand chamber is now quiet. The boss has been defeated.")
+                        boss_room.actions = {"Go back": "library", "Go forward": "throne_room"}
+                        continue
+                    else:
+                        continue
+
+                # Normal room transition
                 self.current_room = next_room
-                self.game_text.append(format_output(f"You move to the {self.current_room} room."))
-            else:
-                self.game_text.append(format_output("You can't do that."))
-        
+
             self.render_screen()
 
-    def handle_library_loot(self):
-        loot_items = generate_library_loot(self.player)
-        for loot in loot_items:
-            self.process_loot(loot)
-        self.library_looted = True
-
-    def process_loot(self, loot):
-        # Telling the player that he learned a new spell 
-        if loot["type"] == "consumable_spell":
-            spell_name = loot["effect"]["spell"]
-            spell = next(spell for spell in [magic.fireball, magic.heal,magic. lightning, magic.ice_blast, magic.shield] if spell.name == spell_name)
-            self.player.spells.append(spell)
-            print(f"You read through the old books and grimmoires and you learned a new spell: {spell_name}!")
-            prompt_continue()
-        elif loot["type"] == "consumable_mana_capacity":
-            take_loot = validate_input(f"Do you want to take the {loot['name']} (+{loot['effect']['mana_capacity']} Mana Capacity)? (yes/no) > ", ["yes", "no"])
-            if take_loot == "yes":
-                self.player.inventory.append(loot)
-            else:
-                pass
-        elif loot["type"] == "consumable_health_capacity":
-            take_loot = validate_input(f"Do you want to take {loot['name']} (+{loot['effect']['health_capacity']} Health Capacity)? (yes/no) > ", ["yes", "no"])
-            if take_loot == "yes":
-                self.player.inventory.append(loot)
-            else:
-                pass
-        else:
-            effect_type = list(loot["effect"].keys())[0]
-            effect_value = loot["effect"][effect_type]
-            take_loot = validate_input(f"Do you want to take the {loot['name']} (+{effect_value} {effect_type.replace('_', ' ').capitalize()})? (yes/no) > ", ["yes", "no"])
-            if take_loot == "yes":
-                self.player.inventory.append(loot)
-            else:
-                pass
-
     def manage_inventory(self):
-        """Manages the player's inventory and spells."""
-        while True:
-            print("\nYour Inventory:")
-            if not self.player.inventory:
-                print("Your inventory is empty.")
-                break
-
-            for i, item in enumerate(self.player.inventory, 1):
-                if item["type"] == "consumable_health":
-                    print(f" [{i}] {item['name']} (Restores {item['effect']['health']} health)")
-                elif item["type"] == "consumable_mana":
-                    print(f" [{i}] {item['name']} (Restores {item['effect']['mana']} mana)")
-                elif item["type"] == "consumable_health_capacity":
-                    print(f" [{i}] {item['name']} (Increases max health by {item['effect']['health_capacity']})")
-                elif item["type"] == "consumable_mana_capacity":
-                    print(f" [{i}] {item['name']} (Increases max mana by {item['effect']['mana_capacity']})")
-                elif item["type"] == "weapon":
-                    print(f" [{i}] {item['name']} (Attack: +{item['effect']['attack']})")
-                elif item["type"] == "armor":
-                    print(f" [{i}] {item['name']} (Defense: +{item['effect']['defense']})")
-                else:
-                    print(f" [{i}] {item['name']}")
-
-            # Prompt the player to choose an item or exit
-            choice = input("\nChoose an item to use or type 'exit' to leave inventory: ").strip().lower()
-            if choice == "exit":
-                break
-
-            # Validate the choice and use the item
-            if choice.isdigit() and 1 <= int(choice) <= len(self.player.inventory):
-                item = self.player.inventory[int(choice) - 1]
-                self.player.use_item(item["name"])
-                prompt_continue()
-            else:
-                print("Invalid choice. Please try again.")
-
-    def trash_item(self):
-        """Allows the player to trash an item from the inventory."""
-        while True:
-            clear_screen()
-            print("Trash an item:")
-            for i, item in enumerate(self.player.inventory, 1):
-                if item["type"].startswith("consumable"):
-                    effect_type = list(item["effect"].keys())[0]
-                    print(f" [{i}] {item['name']} (+{item['effect'][effect_type]} {effect_type.capitalize()})")
-                else:
-                    print(f" [{i}] {item['name']}")
-            print(" [0] Back")
-
-            choice = input("\nWhich item do you want to trash? > ").strip().lower()
-            if choice == "0":
-                break
-            try:
-                item = self.player.inventory.pop(int(choice) - 1)
-                print(f"You trashed {item['name']}.")
-                prompt_continue()
-                break
-            except (ValueError, IndexError):
-                print("Invalid choice, please try again.")
-                prompt_continue()
+        """Manages the player's inventory, equipment, and spells."""
+        inventory.manage_inventory(self)

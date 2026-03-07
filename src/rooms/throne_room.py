@@ -1,10 +1,44 @@
-from utils.helpers import format_output, validate_input, prompt_continue
+from utils.helpers import format_output, prompt_continue
+from combat.monsters import Dragon
 
 def handle_throne_room(game):
-    """Handles the interaction in the throne room."""
-    game.game_text.append(format_output("You approach the throne."))
+    """Handles the throne room boss encounter with the Dragon."""
+    throne_room = game.rooms["throne_room"]
+    
+    if game.dragon_defeated:
+        game.game_text = format_output("The throne room is quiet. The Dragon has been slain. You can proceed to the exit.")
+        game.render_screen()
+        prompt_continue()
+        return
+    
+    game.game_text = format_output("You enter the grand throne room. A massive Dragon guards the throne!")
     game.render_screen()
     prompt_continue()
-    game.game_text.append(format_output("You find a hidden passage behind the throne leading to the exit."))
+    
+    throne_room.monsters = [Dragon.clone()]
+    
+    from combat.combat import combat
+    
+    result = combat(game, game.player, throne_room.monsters)
+    
+    if game.player.health <= 0:
+        game.game_text = format_output("The Dragon has defeated you. Your journey ends here...")
+        game.render_screen()
+        prompt_continue()
+        return
+    
+    if not result:
+        game.game_text = format_output("You fled from the Dragon and returned to safety.")
+        game.current_room = "boss_room"
+        game.render_screen()
+        prompt_continue()
+        return
+    
+    game.dragon_defeated = True
+    throne_room.monsters = []
+    throne_room.update_description("The throne room is now quiet. The Dragon has been slain. You can proceed to the exit.")
+    throne_room.actions = {"Go back": "boss_room", "Proceed to the exit": "exit"}
+    
+    game.game_text = format_output("You have defeated the mighty Dragon! The path to freedom is now open!")
     game.render_screen()
     prompt_continue()
