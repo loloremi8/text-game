@@ -78,11 +78,11 @@ def generate_loot(monster):
     if not monster_loot:
         return []
 
-    # Dragon and bosses drop 2-3 items, regular monsters drop 0-1
+    # Dragon and bosses drop 2-3 items, regular monsters drop 1-2
     if monster.difficulty == "boss":
         num_drops = random.randint(2, 3)
     else:
-        num_drops = random.randint(0, 1)
+        num_drops = random.randint(1, 2)
 
     return random.sample(monster_loot, min(num_drops, len(monster_loot)))
 
