@@ -6,6 +6,9 @@ This text-based game allows players to explore different rooms, interact with ch
 ## Project Structure
 ```
 text-game
+├── game executables
+│    ├── text-game_Linux         # Standalone executable for Linux
+│    └── text-game_Windows.exe   # Standalone executable for Windows
 ├── src
 │    ├── main.py                 # Entry point for the game
 │    ├── core
@@ -31,6 +34,18 @@ text-game
 │    └── utils
 │         └── helpers.py         # Utility functions
 └── README.md                    # Project documentation
+```
+
+## Running the Executables
+
+Pre-built executables are available in the `game executables/` folder — no Python installation required.
+
+**Windows:** `text-game_Windows.exe` can be run directly by double-clicking it.
+
+**Linux:** `text-game_Linux` needs to be made executable first, then run from a terminal:
+```
+chmod +x "game executables/text-game_Linux"
+./"game executables/text-game_Linux"
 ```
 
 ## Setup Instructions
