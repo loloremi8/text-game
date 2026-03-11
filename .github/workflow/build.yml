@@ -1,0 +1,47 @@
+name: Build Executables
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build Windows executable
+        run: pyinstaller --onefile src/main.py --name text-game
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: text-game-windows
+          path: dist/text-game.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build Linux executable
+        run: pyinstaller --onefile src/main.py --name text-game
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: text-game-linux
+          path: dist/text-game
