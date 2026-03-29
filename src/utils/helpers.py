@@ -4,10 +4,6 @@ def clear_screen():
     """Clears the terminal screen."""
     os.system("cls" if os.name == "nt" else "clear")
 
-def format_output(text):
-    """Formats the output text."""
-    return text
-
 def prompt_continue():
     """Prompts the user to press Enter to continue."""
     input("\nPress Enter to continue...")

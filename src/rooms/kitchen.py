@@ -1,21 +1,21 @@
 from items.loot import get_kitchen_loot
-from utils.helpers import format_output, validate_input, prompt_continue, format_loot_description
+from utils.helpers import validate_input, prompt_continue, format_loot_description
 
 def handle_kitchen_loot(game):
     """Handles searching the kitchen."""
     if game.kitchen_looted:
-        game.game_text = format_output("You've already searched the kitchen.")
+        game.game_text = "You've already searched the kitchen."
         game.render_screen()
         prompt_continue()
         return
 
-    game.game_text = format_output("You rummage through the old kitchen...")
+    game.game_text = "You rummage through the old kitchen..."
     game.render_screen()
     prompt_continue()
 
     loot_items = get_kitchen_loot()
     if not loot_items:
-        game.game_text = format_output("You find nothing edible or useful.")
+        game.game_text = "You find nothing edible or useful."
         game.render_screen()
         prompt_continue()
         game.kitchen_looted = True
@@ -23,7 +23,7 @@ def handle_kitchen_loot(game):
 
     for loot in loot_items:
         loot_description = format_loot_description(loot)
-        game.game_text = format_output(f"You found: {loot_description}")
+        game.game_text = f"You found: {loot_description}"
         game.render_screen()
 
         take = validate_input(
@@ -33,9 +33,9 @@ def handle_kitchen_loot(game):
         )
         if take == "yes":
             game.player.inventory.append(loot)
-            game.game_text = format_output(f"You took the {loot['name']}!")
+            game.game_text = f"You took the {loot['name']}!"
         else:
-            game.game_text = format_output(f"You left the {loot['name']} behind.")
+            game.game_text = f"You left the {loot['name']} behind."
 
         game.render_screen()
         prompt_continue()

@@ -3,7 +3,7 @@ import shutil
 import textwrap
 from core import character
 from combat.combat import combat as run_combat
-from utils.helpers import clear_screen, format_output, prompt_continue, format_loot_description
+from utils.helpers import clear_screen, prompt_continue, format_loot_description
 from rooms.room import rooms
 from rooms.treasure_room import handle_treasure_room
 from rooms.library import handle_library_loot
@@ -155,7 +155,7 @@ class Game:
         print("Welcome to the Dungeon crawling game!")
         self.player.choose_name()
         self.player.choose_class()
-        message = format_output(f"Good luck on your journey, {self.player.name} the {self.player.p_class}!")
+        message = f"Good luck on your journey, {self.player.name} the {self.player.p_class}!"
         self.game_text = message
         self.render_screen()
         time.sleep(2)
@@ -166,11 +166,11 @@ class Game:
         """Main game loop."""
         while True:
             room = self.rooms[self.current_room]
-            self.game_text = format_output(room.describe())
+            self.game_text = room.describe()
             self.render_screen()
 
             if not room.actions:
-                self.game_text = format_output("Game over!")
+                self.game_text = "Game over!"
                 self.render_screen()
                 prompt_continue()
                 break
@@ -189,7 +189,7 @@ class Game:
                 if not self.library_looted:
                     handle_library_loot(self)
                 else:
-                    self.game_text = format_output("You've already searched the library.")
+                    self.game_text = "You've already searched the library."
                     self.render_screen()
                     prompt_continue()
                 continue
@@ -227,13 +227,13 @@ class Game:
             # Handle exit / winning the game
             if self.current_room == "exit" and action == "Leave the dungeon":
                 if not self.dragon_defeated:
-                    self.game_text = format_output("The exit is blocked by a magical barrier. You must defeat the Dragon first!")
+                    self.game_text = "The exit is blocked by a magical barrier. You must defeat the Dragon first!"
                     self.render_screen()
                     prompt_continue()
                     self.current_room = "throne_room"
                     continue
                 else:
-                    self.game_text = format_output(f"Congratulations {self.player.name}! You have escaped the dungeon and defeated the Dragon! You win!")
+                    self.game_text = f"Congratulations {self.player.name}! You have escaped the dungeon and defeated the Dragon! You win!"
                     self.render_screen()
                     prompt_continue()
                     break
@@ -249,7 +249,7 @@ class Game:
                         self.current_room = "monster_room"
                         result = run_combat(self, self.player, target_room.monsters)
                         if self.player.health <= 0:
-                            self.game_text = format_output("Your journey ends here...")
+                            self.game_text = "Your journey ends here..."
                             self.render_screen()
                             prompt_continue()
                             return
@@ -272,7 +272,7 @@ class Game:
                     if boss_room.monsters and not self.boss_room_cleared:
                         result = run_combat(self, self.player, boss_room.monsters)
                         if self.player.health <= 0:
-                            self.game_text = format_output("Your journey ends here...")
+                            self.game_text = "Your journey ends here..."
                             self.render_screen()
                             prompt_continue()
                             return

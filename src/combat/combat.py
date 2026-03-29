@@ -1,11 +1,11 @@
 import random
 from combat.monsters import generate_loot
-from utils.helpers import format_output, prompt_continue, validate_input, format_loot_description
+from utils.helpers import prompt_continue, validate_input, format_loot_description
 
 def combat(game, player, monsters):
     """Handles combat between the player and a list of monsters."""
     for monster in monsters:
-        game.game_text = format_output(f"A {monster.name} appears!")
+        game.game_text = f"A {monster.name} appears!"
         game.render_screen(monster)
         prompt_continue()
 
@@ -18,7 +18,7 @@ def combat(game, player, monsters):
                 {"f": "fight", "r": "run", "i": "inventory"}
             )
             if action == "run":
-                game.game_text = format_output("You chose to run away!")
+                game.game_text = "You chose to run away!"
                 game.render_screen(monster)
                 return False
             elif action == "inventory":
@@ -41,7 +41,7 @@ def combat(game, player, monsters):
                         spell_input = input("\nEnter the spell name or first letter: ").strip().lower()
 
                         if not spell_input:
-                            game.game_text = format_output("You didn't enter a spell name!")
+                            game.game_text = "You didn't enter a spell name!"
                             game.render_screen(monster)
                             prompt_continue()
                             continue
@@ -57,24 +57,24 @@ def combat(game, player, monsters):
                             if spell_result:
                                 if spell_result["type"] == "damage":
                                     monster.health -= spell_result["amount"]
-                                    game.game_text = format_output(f"You cast {spell_to_cast.name.capitalize()} and deal {spell_result['amount']} damage to the {monster.name}.")
+                                    game.game_text = f"You cast {spell_to_cast.name.capitalize()} and deal {spell_result['amount']} damage to the {monster.name}."
                                 elif spell_result["type"] == "heal":
-                                    game.game_text = format_output(f"You cast {spell_to_cast.name.capitalize()} and heal {spell_result['amount']} health.")
+                                    game.game_text = f"You cast {spell_to_cast.name.capitalize()} and heal {spell_result['amount']} health."
 
                                 game.render_screen(monster)
                                 prompt_continue()
                             else:
-                                game.game_text = format_output("The spell failed! (Not enough mana?)")
+                                game.game_text = "The spell failed! (Not enough mana?)"
                                 game.render_screen(monster)
                                 prompt_continue()
                                 continue
                         else:
-                            game.game_text = format_output(f"'{spell_input}' is not a valid spell!")
+                            game.game_text = f"'{spell_input}' is not a valid spell!"
                             game.render_screen(monster)
                             prompt_continue()
                             continue
                     else:
-                        game.game_text = format_output("You don't know any spells.")
+                        game.game_text = "You don't know any spells."
                         game.render_screen(monster)
                         prompt_continue()
                         continue
@@ -89,9 +89,9 @@ def combat(game, player, monsters):
                     monster.health -= damage_dealt
 
                     if is_crit:
-                        game.game_text = format_output(f"CRITICAL HIT! You attack the {monster.name} and deal {damage_dealt} damage.")
+                        game.game_text = f"CRITICAL HIT! You attack the {monster.name} and deal {damage_dealt} damage."
                     else:
-                        game.game_text = format_output(f"You attack the {monster.name} and deal {damage_dealt} damage.")
+                        game.game_text = f"You attack the {monster.name} and deal {damage_dealt} damage."
 
                     game.render_screen(monster)
                     prompt_continue()
@@ -100,20 +100,20 @@ def combat(game, player, monsters):
                 if monster.health > 0:
                     monster_damage = max(0, random.randint(1, monster.attack) - player.defense)
                     player.health -= monster_damage
-                    game.game_text = format_output(f"The {monster.name} attacks you and deals {monster_damage} damage.")
+                    game.game_text = f"The {monster.name} attacks you and deals {monster_damage} damage."
 
                     game.render_screen(monster)
                     prompt_continue()
 
                 # Check if monster defeated
                 if monster.health <= 0:
-                    game.game_text = format_output(f"You have defeated the {monster.name}!")
+                    game.game_text = f"You have defeated the {monster.name}!"
                     game.render_screen(monster)
                     loot_items = generate_loot(monster)
                     if loot_items:
                         for loot in loot_items:
                             loot_description = format_loot_description(loot)
-                            game.game_text = format_output(f"You found: {loot_description}")
+                            game.game_text = f"You found: {loot_description}"
                             game.render_screen(monster)
                             take_loot = validate_input(
                                 f"Do you want to take the {loot['name']}? (yes/no) > ",
@@ -122,16 +122,16 @@ def combat(game, player, monsters):
                             )
                             if take_loot == "yes":
                                 player.inventory.append(loot)
-                                game.game_text = format_output(f"You took the {loot['name']}!")
+                                game.game_text = f"You took the {loot['name']}!"
                             else:
-                                game.game_text = format_output(f"You left the {loot['name']} behind.")
+                                game.game_text = f"You left the {loot['name']} behind."
                             game.render_screen(monster)
                     prompt_continue()
                     break
 
                 # Check if player defeated
                 if player.health <= 0:
-                    game.game_text = format_output("You have been defeated! Game Over.")
+                    game.game_text = "You have been defeated! Game Over."
                     game.render_screen(monster)
                     prompt_continue()
                     return False
