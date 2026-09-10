@@ -7,6 +7,8 @@ class Room:
         self.actions = actions
         self.monsters = [m.clone() for m in monsters] if monsters else []
         self.coordinates = coordinates
+        self.looted = False
+        self.interactions = 0
 
     def add_exit(self, direction, room):
         self.actions[direction] = room
@@ -24,73 +26,90 @@ class Room:
         """Updates the room description."""
         self.description = new_description
 
-rooms = {
-    "start": Room(
-        "You find yourself in a dimly lit cave. A path leads forward.",
-        {"Go forward": "hallway"},
-        coordinates=(2, 4)
-    ),
-    "hallway": Room(
-        "You enter a long hallway with doors on either side.",
-        {"Open left door": "treasure_room", "Open right door": "monster_room", "Go forward": "library", "Go back": "start"},
-        coordinates=(2, 3)
-    ),
-    "treasure_room": Room(
-        "You find an empty room with only a chest in one of the dark corners of the room.",
-        {"Go back": "hallway", "Move closer to the chest": "move_to_chest"},
-        coordinates=(1, 3)
-    ),
-    "monster_room": Room(
-        "A fearsome monster appears!",
-        {"fight": "monster_room", "Go back": "hallway"},
-        [random.choice(normal_monsters) for _ in range(random.randint(1, 2))],
-        coordinates=(3, 3)
-    ),
-    "boss_room": Room(
-        "You enter a grand chamber. A powerful boss awaits!",
-        {"fight": "boss_room", "Go back": "library"},
-        [random.choice(special_monsters)],
-        coordinates=(2, 1)
-    ),
-    "library": Room(
-        "You enter a quiet library filled with ancient books.",
-        {"Go back": "hallway", "Search the room": "search_library", "Go forward": "boss_room", "Open left door": "armory"},
-        coordinates=(2, 2)
-    ),
-    "armory": Room(
-        "You find yourself in an armory filled with weapons and armor.",
-        {"Go back": "library", "Search the armory": "search_armory"},
-        coordinates=(1, 2)
-    ),
-    "dining_hall": Room(
-        "You enter a grand dining hall with a long table set for a feast.",
-        {"Go back": "monster_room", "Search the dining hall": "search_dining_hall", "Explore further": "kitchen"},
-        coordinates=(4, 3)
-    ),
-    "kitchen": Room(
-        "You find yourself in a kitchen filled with delicious food.",
-        {"Go back": "dining_hall", "Search the kitchen": "search_kitchen", "Explore further": "garden"},
-        coordinates=(4, 2)
-    ),
-    "garden": Room(
-        "You step into a beautiful garden filled with exotic plants.",
-        {"Go back": "kitchen", "Search the garden": "search_garden", "Explore further": "fountain"},
-        coordinates=(4, 1)
-    ),
-    "fountain": Room(
-        "You find a serene fountain in the center of the garden.",
-        {"Go back": "garden", "Interact with the fountain": "interaction_with_fountain"},
-        coordinates=(4, 0)
-    ),
-    "throne_room": Room(
-        "You enter a grand throne room with a majestic throne at the end.",
-        {"Go back": "boss_room", "Approach the throne": "approach_throne", "Open left door": "exit"},
-        [random.choice(boss_monsters)],
-        coordinates=(2, 0)
-    ),
-    "exit": Room(
-        "You find the exit of the dungeon.",
-        {"Go back": "throne_room", "Leave the dungeon": "exit"},
-        coordinates=(1, 0)
-    )
-}
+class Floor:
+    def __init__(self, name, rooms):
+        self.name = name
+        self.rooms = rooms
+
+    def bounds(self):
+        """Returns (min_x, min_y, max_x, max_y) for the rooms that have coordinates."""
+        coordinates = [room.coordinates for room in self.rooms.values() if room.coordinates]
+        if not coordinates:
+            return (0, 0, 0, 0)
+        xs = [x for x, y in coordinates]
+        ys = [y for x, y in coordinates]
+        return (min(xs), min(ys), max(xs), max(ys))
+
+def build_floor_one() -> Floor:
+    """Builds a fresh first floor so a second Game cannot inherit a looted dungeon."""
+    rooms = {
+        "start": Room(
+            "You find yourself in a dimly lit cave. A path leads forward.",
+            {"Go forward": "hallway"},
+            coordinates=(2, 4)
+        ),
+        "hallway": Room(
+            "You enter a long hallway with doors on either side.",
+            {"Open left door": "treasure_room", "Open right door": "monster_room", "Go forward": "library", "Go back": "start"},
+            coordinates=(2, 3)
+        ),
+        "treasure_room": Room(
+            "You find an empty room with only a chest in one of the dark corners of the room.",
+            {"Go back": "hallway", "Move closer to the chest": "move_to_chest"},
+            coordinates=(1, 3)
+        ),
+        "monster_room": Room(
+            "A fearsome monster appears!",
+            {"fight": "monster_room", "Go back": "hallway"},
+            [random.choice(normal_monsters) for _ in range(random.randint(1, 2))],
+            coordinates=(3, 3)
+        ),
+        "boss_room": Room(
+            "You enter a grand chamber. A powerful boss awaits!",
+            {"fight": "boss_room", "Go back": "library"},
+            [random.choice(special_monsters)],
+            coordinates=(2, 1)
+        ),
+        "library": Room(
+            "You enter a quiet library filled with ancient books.",
+            {"Go back": "hallway", "Search the room": "search_library", "Go forward": "boss_room", "Open left door": "armory"},
+            coordinates=(2, 2)
+        ),
+        "armory": Room(
+            "You find yourself in an armory filled with weapons and armor.",
+            {"Go back": "library", "Search the armory": "search_armory"},
+            coordinates=(1, 2)
+        ),
+        "dining_hall": Room(
+            "You enter a grand dining hall with a long table set for a feast.",
+            {"Go back": "monster_room", "Search the dining hall": "search_dining_hall", "Explore further": "kitchen"},
+            coordinates=(4, 3)
+        ),
+        "kitchen": Room(
+            "You find yourself in a kitchen filled with delicious food.",
+            {"Go back": "dining_hall", "Search the kitchen": "search_kitchen", "Explore further": "garden"},
+            coordinates=(4, 2)
+        ),
+        "garden": Room(
+            "You step into a beautiful garden filled with exotic plants.",
+            {"Go back": "kitchen", "Search the garden": "search_garden", "Explore further": "fountain"},
+            coordinates=(4, 1)
+        ),
+        "fountain": Room(
+            "You find a serene fountain in the center of the garden.",
+            {"Go back": "garden", "Interact with the fountain": "interaction_with_fountain"},
+            coordinates=(4, 0)
+        ),
+        "throne_room": Room(
+            "You enter a grand throne room with a majestic throne at the end.",
+            {"Go back": "boss_room", "Approach the throne": "approach_throne", "Open left door": "exit"},
+            [random.choice(boss_monsters)],
+            coordinates=(2, 0)
+        ),
+        "exit": Room(
+            "You find the exit of the dungeon.",
+            {"Go back": "throne_room", "Leave the dungeon": "exit"},
+            coordinates=(1, 0)
+        )
+    }
+    return Floor("floor_1", rooms)

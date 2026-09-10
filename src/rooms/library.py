@@ -1,8 +1,16 @@
 from items.loot import get_library_loot
-from utils.helpers import validate_input, prompt_continue, format_loot_description
+from items.loot_flow import offer_loot
+from utils.helpers import prompt_continue
 
 def handle_library_loot(game):
     """Handles searching the library."""
+    room = game.rooms["library"]
+    if room.looted:
+        game.game_text = "You've already searched the library."
+        game.render_screen()
+        prompt_continue()
+        return
+
     game.game_text = "You search through the dusty shelves..."
     game.render_screen()
     prompt_continue()
@@ -12,26 +20,8 @@ def handle_library_loot(game):
         game.game_text = "You find nothing of interest."
         game.render_screen()
         prompt_continue()
-        game.library_looted = True
+        room.looted = True
         return
 
-    for loot in loot_items:
-        loot_description = format_loot_description(loot)
-        game.game_text = f"You found: {loot_description}"
-        game.render_screen()
-
-        take = validate_input(
-            f"Take the {loot['name']}? (yes/no) > ",
-            ["yes", "no"],
-            {"y": "yes", "n": "no"}
-        )
-        if take == "yes":
-            game.player.inventory.append(loot)
-            game.game_text = f"You took the {loot['name']}!"
-        else:
-            game.game_text = f"You left the {loot['name']} behind."
-
-        game.render_screen()
-        prompt_continue()
-
-    game.library_looted = True
+    offer_loot(game, loot_items)
+    room.looted = True
