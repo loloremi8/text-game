@@ -22,7 +22,7 @@ def handle_throne_room(game):
     result = combat(game, game.player, throne_room.monsters)
     
     if game.player.health <= 0:
-        game.game_text = "The Dragon has defeated you. Your journey ends here..."
+        game.game_text = "The Dragon has defeated you."
         game.render_screen()
         prompt_continue()
         return

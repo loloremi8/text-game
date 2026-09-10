@@ -1,4 +1,5 @@
 from combat import magic
+from core.inventory import Inventory
 from utils.helpers import clear_screen
 
 class Character:
@@ -9,12 +10,11 @@ class Character:
         self.max_health = 100
         self.mana = 0
         self.max_mana = 0
-        self.attack = 10
-        self.defense = 5
         self.base_attack = 10
         self.base_defense = 5
+        self.shield_pool = 0
         self.crit_chance = 0
-        self.inventory = []
+        self.inventory = Inventory()
         self.spells = []
         self.equipped = {
             "weapon": None,
@@ -23,6 +23,22 @@ class Character:
             "shield": None,
             "boots": None
         }
+
+    @property
+    def attack(self):
+        """Base attack plus the equipped weapon's attack bonus."""
+        weapon = self.equipped["weapon"]
+        bonus = weapon["effect"]["attack"] if weapon else 0
+        return self.base_attack + bonus
+
+    @property
+    def defense(self):
+        """Base defense plus the defense bonus of every equipped item."""
+        total = self.base_defense
+        for item in self.equipped.values():
+            if item and "defense" in item["effect"]:
+                total += item["effect"]["defense"]
+        return total
 
     def choose_name(self):
         """Allows the player to choose a name."""
@@ -89,8 +105,6 @@ class Character:
                 self.max_health = stats["max_health"]
                 self.mana = stats["mana"]
                 self.max_mana = stats["max_mana"]
-                self.attack = stats["attack"]
-                self.defense = stats["defense"]
                 self.base_attack = stats["attack"]
                 self.base_defense = stats["defense"]
                 self.crit_chance = stats["crit_chance"]
@@ -120,38 +134,42 @@ Helmet: {helmet_name}
 Chestplate: {chestplate_name}
 Shield: {shield_name}
 Boots: {boots_name}"""
+        if self.shield_pool > 0:
+            stats += f"\nMagic Shield: {self.shield_pool}"
         if self.crit_chance > 0:
             stats += f"\nCrit Chance: {int(self.crit_chance * 100)}%"
         return stats
 
-    def use_item(self, item_name):
-        """Uses an item from the inventory."""
-        item = None
-        for i in self.inventory:
-            if i["name"].lower() == item_name.lower():
-                item = i
-                break
-
-        if not item:
-            print(f"  You don't have '{item_name}' in your inventory.")
+    def use_item(self, index):
+        """Uses the item at the given inventory stack index."""
+        if index < 0 or index >= len(self.inventory):
+            print("  Invalid item.")
             return False
 
+        item = self.inventory.stacks[index]["item"]
+
         if item["type"] == "consumable_health":
+            if self.health >= self.max_health:
+                print("  You are already at full health.")
+                return False
             heal_amount = item["effect"]["health"]
             old_health = self.health
             self.health = min(self.health + heal_amount, self.max_health)
             actual_heal = self.health - old_health
             print(f"  You used {item['name']} and restored {actual_heal} health. (Health: {self.health}/{self.max_health})")
-            self.inventory.remove(item)
+            self.inventory.remove(index)
             return True
 
         elif item["type"] == "consumable_mana":
+            if self.mana >= self.max_mana:
+                print("  You are already at full mana.")
+                return False
             mana_amount = item["effect"]["mana"]
             old_mana = self.mana
             self.mana = min(self.mana + mana_amount, self.max_mana)
             actual_mana = self.mana - old_mana
             print(f"  You used {item['name']} and restored {actual_mana} mana. (Mana: {self.mana}/{self.max_mana})")
-            self.inventory.remove(item)
+            self.inventory.remove(index)
             return True
 
         elif item["type"] == "consumable_health_capacity":
@@ -159,7 +177,7 @@ Boots: {boots_name}"""
             self.max_health += capacity
             self.health += capacity
             print(f"  You used {item['name']}! Max health increased by {capacity}. (Health: {self.health}/{self.max_health})")
-            self.inventory.remove(item)
+            self.inventory.remove(index)
             return True
 
         elif item["type"] == "consumable_mana_capacity":
@@ -167,7 +185,7 @@ Boots: {boots_name}"""
             self.max_mana += capacity
             self.mana += capacity
             print(f"  You used {item['name']}! Max mana increased by {capacity}. (Mana: {self.mana}/{self.max_mana})")
-            self.inventory.remove(item)
+            self.inventory.remove(index)
             return True
 
         elif item["type"] == "spell_book":
@@ -177,35 +195,28 @@ Boots: {boots_name}"""
                     print(f"  You already know {spell.name.capitalize()}!")
                     return False
             self.spells.append(spell)
-            self.inventory.remove(item)
+            self.inventory.remove(index)
             return True
 
         elif item["type"] == "weapon":
-            # Unequip current weapon first
             current_weapon = self.equipped["weapon"]
+            self.inventory.remove(index)
             if current_weapon:
-                self.attack -= current_weapon["effect"]["attack"]
-                self.inventory.append(current_weapon)
+                self.inventory.add(current_weapon)
                 print(f"  You unequipped {current_weapon['name']}.")
-
             # Equip new weapon
             self.equipped["weapon"] = item
-            self.attack += item["effect"]["attack"]
-            self.inventory.remove(item)
             print(f"  You equipped {item['name']}! Attack: {self.attack} (+{item['effect']['attack']})")
             return True
 
         elif item["type"] == "armor":
             slot = item["slot"]
             current = self.equipped[slot]
+            self.inventory.remove(index)
             if current:
-                self.defense -= current["effect"]["defense"]
-                self.inventory.append(current)
+                self.inventory.add(current)
                 print(f"  You unequipped {current['name']}.")
-
             self.equipped[slot] = item
-            self.defense += item["effect"]["defense"]
-            self.inventory.remove(item)
             print(f"  You equipped {item['name']} ({slot})! Defense: {self.defense} (+{item['effect']['defense']})")
             return True
 

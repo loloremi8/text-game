@@ -3,7 +3,8 @@ from utils.helpers import validate_input, prompt_continue
 
 def handle_fountain_interaction(game):
     """Handles the interaction with the fountain."""
-    if game.fountain_interactions >= 3:
+    room = game.rooms["fountain"]
+    if room.interactions >= 3:
         game.game_text = "The fountain's magic seems to have faded. You can't interact with it anymore."
         game.render_screen()
         prompt_continue()
@@ -25,7 +26,7 @@ def handle_fountain_interaction(game):
             game.game_text = "You feel a surge of magical energy. Your mana has increased by 20."
         elif reward == "item":
             item = {"name": "Mystic Amulet", "type": "armor", "slot": "helmet", "effect": {"defense": 5}, "rarity": "rare"}
-            game.player.inventory.append(item)
+            game.player.inventory.add(item)
             game.game_text = "You find a Mystic Amulet in the fountain."
         game.render_screen()
     elif action == "drink":
@@ -39,5 +40,5 @@ def handle_fountain_interaction(game):
         game.game_text = "You decide to leave the fountain."
         game.render_screen()
 
-    game.fountain_interactions += 1
+    room.interactions += 1
     prompt_continue()

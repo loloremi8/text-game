@@ -4,7 +4,7 @@ import textwrap
 from core import character
 from combat.combat import combat as run_combat
 from utils.helpers import clear_screen, prompt_continue, format_loot_description
-from rooms.room import rooms
+from rooms.room import build_floor_one
 from rooms.treasure_room import handle_treasure_room
 from rooms.library import handle_library_loot
 from rooms.armory import handle_armory_loot
@@ -22,36 +22,29 @@ def get_terminal_width():
 class Game:
     def __init__(self):
         self.player = character.Character()
-        self.rooms = rooms
+        self.floor = build_floor_one()
+        self.rooms = self.floor.rooms
         self.current_room = "start"
         self.game_text = ""  # instead of []
-        self.treasure_room_looted = False
-        self.library_looted = False
-        self.kitchen_looted = False
-        self.dining_hall_looted = False
-        self.garden_looted = False
-        self.armory_looted = False
-        self.fountain_interactions = 0
         self.boss_room_cleared = False   # For the boss_room (Dark Knight/Lich)
         self.dragon_defeated = False      # For the throne_room (Dragon)
 
     def render_map(self):
-        """Renders the map in the terminal."""
-        map_width = 5
-        map_height = 5
+        """Renders the map in the terminal, sized to fit the current floor."""
+        min_x, min_y, max_x, max_y = self.floor.bounds()
+        map_width = max_x - min_x + 1
+        map_height = max_y - min_y + 1
         map_grid = [[" " for _ in range(map_width)] for _ in range(map_height)]
 
-        for room_name, room in self.rooms.items():
+        for room in self.rooms.values():
             if room.coordinates:
                 x, y = room.coordinates
-                if 0 <= y < map_height and 0 <= x < map_width:
-                    map_grid[y][x] = "R"
+                map_grid[y - min_y][x - min_x] = "R"
 
         current_room = self.rooms[self.current_room]
         if current_room.coordinates:
             x, y = current_room.coordinates
-            if 0 <= y < map_height and 0 <= x < map_width:
-                map_grid[y][x] = "P"
+            map_grid[y - min_y][x - min_x] = "P"
 
         print("Map:")
         for row in map_grid:
@@ -165,6 +158,15 @@ class Game:
     def game_loop(self):
         """Main game loop."""
         while True:
+            if self.player.health <= 0:
+                # A dead player never gets another action. This belongs here rather
+                # than at each call site: death used to leak out of the throne room
+                # and the run kept going at negative health.
+                self.game_text = "Your journey ends here..."
+                self.render_screen()
+                prompt_continue()
+                return
+
             room = self.rooms[self.current_room]
             self.game_text = room.describe()
             self.render_screen()
@@ -186,12 +188,7 @@ class Game:
 
             # Handle library search
             if self.current_room == "library" and action == "Search the room":
-                if not self.library_looted:
-                    handle_library_loot(self)
-                else:
-                    self.game_text = "You've already searched the library."
-                    self.render_screen()
-                    prompt_continue()
+                handle_library_loot(self)
                 continue
 
             # Handle armory search
